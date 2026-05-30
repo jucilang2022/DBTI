@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion'
-import { Film, Sparkles, Clock } from 'lucide-react'
+import { Film, Sparkles, Clock, Book } from 'lucide-react'
 
 interface StartScreenProps {
   onStart: () => void
   onHistory: () => void
+  onExplore: () => void
 }
 
 const floatingMasks = [
@@ -83,15 +84,27 @@ export function StartScreen({ onStart }: StartScreenProps) {
           约需 3-5 分钟 · 共 10 题
         </p>
 
-        <motion.button
-          onClick={onHistory}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 text-xs hover:bg-zinc-800 hover:text-zinc-300 transition-colors mt-6"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Clock className="w-3.5 h-3.5" />
-          查看历史记录
-        </motion.button>
+        <div className="flex items-center justify-center gap-3 mt-6">
+          <motion.button
+            onClick={onHistory}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 text-xs hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            历史记录
+          </motion.button>
+
+          <motion.button
+            onClick={onExplore}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 text-xs hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Book className="w-3.5 h-3.5" />
+            探索全部人格
+          </motion.button>
+        </div>
       </motion.div>
     </div>
   )

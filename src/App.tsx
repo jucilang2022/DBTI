@@ -3,9 +3,10 @@ import { StartScreen } from '@/components/StartScreen'
 import { Quiz } from '@/components/Quiz'
 import { Result } from '@/components/Result'
 import { HistoryPage } from '@/components/HistoryPage'
+import { TypeExplorer } from '@/components/TypeExplorer'
 import type { QuizResult, Director, Answer, QuizQuestion } from '@/types'
 
-type Phase = 'loading' | 'start' | 'quiz' | 'result' | 'history'
+type Phase = 'loading' | 'start' | 'quiz' | 'result' | 'history' | 'explore'
 
 export default function App() {
   const [phase, setPhase] = useState<Phase>('loading')
@@ -34,6 +35,10 @@ export default function App() {
 
   const handleHistory = () => {
     setPhase('history')
+  }
+
+  const handleExplore = () => {
+    setPhase('explore')
   }
 
   const handleComplete = (
@@ -89,8 +94,9 @@ export default function App() {
 
   return (
     <>
-      {phase === 'start' && <StartScreen onStart={handleStart} onHistory={handleHistory} />}
+      {phase === 'start' && <StartScreen onStart={handleStart} onHistory={handleHistory} onExplore={handleExplore} />}
       {phase === 'history' && <HistoryPage onBack={() => setPhase('start')} />}
+      {phase === 'explore' && <TypeExplorer onBack={() => setPhase('start')} />}
       {phase === 'quiz' && <Quiz directors={directors} onComplete={handleComplete} />}
       {phase === 'result' && result && quizData && (
         <Result

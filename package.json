@@ -1,7 +1,8 @@
 {
   "name": "dbti",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "🎬 DBTI 导演人格测试 — 10 道题找到你的电影品味 DNA",
   "type": "module",
   "scripts": {
     "dev": "vite",
