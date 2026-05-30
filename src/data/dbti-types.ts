@@ -1,7 +1,7 @@
 import type { DBTIType } from '@/types'
 
 /**
- * DBTI 12 型人格 + 4 种触发式特殊人格
+ * DBTI 12 型人格 + 7 种触发式特殊人格
  */
 
 export const DBTI_TYPES: DBTIType[] = [
@@ -176,7 +176,7 @@ export const DBTI_TYPES: DBTIType[] = [
   },
 ]
 
-// ===== 4 种触发式特殊人格 =====
+// ===== 7 种触发式特殊人格 =====
 
 export const TRIGGER_TYPES: DBTIType[] = [
   {
@@ -191,6 +191,20 @@ export const TRIGGER_TYPES: DBTIType[] = [
     quote: '"这个导演...是拍什么的来着？" ——你看到每个导演时的反应',
     recommendations: ['《霸王别姬》', '《千与千寻》', '《肖申克的救赎》', '这个测试页面'],
     color: '#6b7280',
+    rarity: 'common',
+  },
+  {
+    id: 'NBC',
+    name: '牛逼克拉斯',
+    nameEn: 'NBC',
+    tags: [],
+    tagline: '你知道的还没不知道的多',
+    description:
+      '你选的10位导演里有将近一半你都没听说过。牛逼克拉斯——不是说你牛逼，是说你的无知程度有点牛逼。不过换个角度看，你还有好多好电影没看，这不也是一种幸福吗？建议你把这个测试的截图发朋友圈，然后配文"今天开始补片"。至少显得你有上进心。',
+    spiritDirector: '（你连导演都不认识，还要什么精神导演）',
+    quote: '"这个导演是谁？" ——你看到每一题的反应',
+    recommendations: ['从豆瓣TOP250开始', '先把张艺谋认全', '诺兰总该知道吧'],
+    color: '#a16207',
     rarity: 'common',
   },
   {
@@ -209,10 +223,10 @@ export const TRIGGER_TYPES: DBTIType[] = [
   },
   {
     id: 'HIDDEN_SNIFFER',
-    name: '小众装逼犯',
-    nameEn: 'Pretentious Picker',
+    name: '小众姐/哥',
+    nameEn: 'Hidden Gem Sniffer',
     tags: ['小众', '冷门', '遗珠'],
-    tagline: '每部都是小众佳作——你确定你全看懂了？',
+    tagline: '每一部都是小众佳作——你确定你全看懂了？',
     description:
       '你的选择记录简直就是一份"如何假装资深影迷"指南。每一部都是"小众佳作"——问题是，你选的这片子根本连中文字幕都没有啊！你是看的无字幕原版吗？好的，尊贵的冷门观众。不过说真的，有时候选选"代表作"也没什么丢人的，毕竟那确实好看啊。',
     spiritDirector: '蔡明亮 / 阿彼察邦 / 毕赣',
@@ -235,13 +249,40 @@ export const TRIGGER_TYPES: DBTIType[] = [
     color: '#22c55e',
     rarity: 'common',
   },
+  {
+    id: 'CROWD',
+    name: '跟风大队',
+    nameEn: 'Crowd Follower',
+    tags: ['商业', '大众'],
+    tagline: '哪部火你选哪部，热搜就是你的片单',
+    description:
+      '你在一共10道题里几乎每题都选了最出名的那部电影。你不只是在追随主流——你就是在跟着热搜看电影。你的选片标准简单粗暴：朋友圈有人发了吗？豆瓣评分过8了吗？票房过10亿了吗？都满足了？好，那就是它了。你不可悲，你只是...有点从众。但你开心就好，毕竟爆款确实有爆款的道理。',
+    spiritDirector: '（你自己不都选最火的吗？不需要精神导演）',
+    quote: '"最近大家都在看什么？" ——你每次找电影时的第一句话',
+    recommendations: ['试试不看出名的那部', '小众片也有好东西', '走出你的信息茧房'],
+    color: '#0e7490',
+    rarity: 'uncommon',
+  },
+  {
+    id: 'OLDPEOPLE',
+    name: '怀旧老人',
+    nameEn: 'Old People',
+    tags: ['古典', '传统', '大师'],
+    tagline: '不是老片你不看，你是电影界的考古学家',
+    description:
+      '你有一个惊人的能力：每次从导演的作品里选，你都能精准地选出最早的那一部。你不是在看电影，你是在做电影考古。你的脑子像是内置了一个时间轴，永远指向"越早越好"。别人看新片，你看老片；别人看修复版，你看原始版。你是朋友圈里唯一一个会为了"哪个版本画幅比更正确"而跟人吵架的人。',
+    spiritDirector: '小津安二郎 / 费穆 / 黑泽明',
+    quote: '"这片子我只看1954年的原版，后来的彩色修复版都是对原作的亵渎。"',
+    recommendations: ['《东京物语》', '《小城之春》', '《罗生门》', '《七武士》'],
+    color: '#78716c',
+    rarity: 'rare',
+  },
 ]
 
 /** 根据 vibe 标签频率找到最匹配的 DBTI 类型 */
 export function matchDBTIType(vibeCounts: Record<string, number>): DBTIType {
   const totalVibes = Object.values(vibeCounts).reduce((a, b) => a + b, 0)
   if (totalVibes === 0) {
-    // fallback: 没有 vibe 数据
     return DBTI_TYPES.find((t) => t.id === 'STORY')!
   }
 

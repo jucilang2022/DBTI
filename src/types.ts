@@ -87,4 +87,6 @@ export interface QuizResult {
   knownCount: number
   /** 匹配度评分（0-100） */
   matchScore: number
+  /** 选了该导演最早作品的次数（用于怀旧老人检测） */
+  earliestYearPicks?: number
 }
