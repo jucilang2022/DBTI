@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { StartScreen } from '@/components/StartScreen'
 import { Quiz } from '@/components/Quiz'
 import { Result } from '@/components/Result'
+import { HistoryPage } from '@/components/HistoryPage'
 import type { QuizResult, Director, Answer, QuizQuestion } from '@/types'
 
-type Phase = 'loading' | 'start' | 'quiz' | 'result'
+type Phase = 'loading' | 'start' | 'quiz' | 'result' | 'history'
 
 export default function App() {
   const [phase, setPhase] = useState<Phase>('loading')
@@ -29,6 +30,10 @@ export default function App() {
 
   const handleStart = () => {
     setPhase('quiz')
+  }
+
+  const handleHistory = () => {
+    setPhase('history')
   }
 
   const handleComplete = (
@@ -84,7 +89,8 @@ export default function App() {
 
   return (
     <>
-      {phase === 'start' && <StartScreen onStart={handleStart} />}
+      {phase === 'start' && <StartScreen onStart={handleStart} onHistory={handleHistory} />}
+      {phase === 'history' && <HistoryPage onBack={() => setPhase('start')} />}
       {phase === 'quiz' && <Quiz directors={directors} onComplete={handleComplete} />}
       {phase === 'result' && result && quizData && (
         <Result
