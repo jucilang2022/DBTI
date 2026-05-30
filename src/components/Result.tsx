@@ -58,6 +58,15 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
   }, [type, matchScore, knownCount])
 
   const renderShareText = () => {
+    const choiceEmojis = result.choiceCounts
+      ? Object.entries(result.choiceCounts).map(([k, v]) =>
+          k === 'famous' ? '⭐'.repeat(v as number) :
+          k === 'controversial' ? '🔥'.repeat(v as number) :
+          k === 'hidden' ? '💎'.repeat(v as number) :
+          k === 'other' ? '🎬'.repeat(v as number) :
+          '❓'.repeat(v as number)
+        ).join('')
+      : ''
     const lines = [
       '🎬 DBTI 导演人格测试结果',
       '',
@@ -65,13 +74,14 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
       `📝 「${type.tagline}」`,
       `🎯 匹配度：${matchScore}%`,
       `🎭 认识 ${knownCount}/10 位导演`,
+      choiceEmojis ? `📊 ${choiceEmojis}` : '',
       '',
       `✨ 精神导演：${type.spiritDirector}`,
       '',
       '来测测你的导演人格 👇',
       window.location.href,
     ]
-    return lines.join('\n')
+    return lines.filter(Boolean).join('\n')
   }
 
   const handleShare = async () => {
@@ -237,9 +247,29 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
             </div>
           </div>
 
+          {/* 选项分布 */}
+          {result.choiceCounts && (
+            <div className="flex items-center justify-around pt-4 pb-4 mb-4 border-t border-b border-zinc-800">
+              {Object.entries(result.choiceCounts).map(([key, count]) => {
+                const label =
+                  key === 'famous' ? '⭐代表作' :
+                  key === 'controversial' ? '🔥争议' :
+                  key === 'hidden' ? '💎小众' :
+                  key === 'other' ? '🎬其他' :
+                  '❓没看过'
+                return (
+                  <div key={key} className="text-center">
+                    <div className="text-lg font-bold text-white">{count}</div>
+                    <div className="text-[10px] text-zinc-500 mt-0.5">{label}</div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           {Object.keys(result.dimensions).length > 0 && (
             <>
-              <div className="flex items-center gap-2 mb-4 pt-2 border-t border-zinc-800">
+              <div className="flex items-center gap-2 mb-4 pt-2">
                 <Sparkles className="w-4 h-4 text-zinc-400" />
                 <span className="text-sm font-semibold text-white">你的品味光谱</span>
               </div>

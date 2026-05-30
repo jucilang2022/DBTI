@@ -70,6 +70,8 @@ export interface QuizResult {
   type: DBTIType
   /** 各维度的得分（用于展示雷达图或详情） */
   dimensions: Record<string, number>
+  /** 选项分布统计 */
+  choiceCounts?: Record<string, number>
   /** 最喜欢的导演（哪题选了代表作/争议作等） */
   favoriteDirector: string
   /** 用户已认识的导演数 */
