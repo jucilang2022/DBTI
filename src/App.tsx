@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { StartScreen } from '@/components/StartScreen'
 import { Quiz } from '@/components/Quiz'
 import { Result } from '@/components/Result'
-import type { QuizResult, Director } from '@/types'
+import type { QuizResult, Director, Answer, QuizQuestion } from '@/types'
 
 type Phase = 'loading' | 'start' | 'quiz' | 'result'
 
@@ -10,10 +10,13 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [directors, setDirectors] = useState<Director[]>([])
   const [result, setResult] = useState<QuizResult | null>(null)
+  const [quizData, setQuizData] = useState<{
+    questions: QuizQuestion[]
+    answers: Answer[]
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // 动态加载导演数据
     import('@/data/directors')
       .then((mod) => {
         setDirectors(mod.directors)
@@ -28,17 +31,22 @@ export default function App() {
     setPhase('quiz')
   }
 
-  const handleComplete = (quizResult: QuizResult) => {
+  const handleComplete = (
+    quizResult: QuizResult,
+    questions: QuizQuestion[],
+    answers: Answer[],
+  ) => {
     setResult(quizResult)
+    setQuizData({ questions, answers })
     setPhase('result')
   }
 
   const handleRestart = () => {
     setResult(null)
+    setQuizData(null)
     setPhase('start')
   }
 
-  // 加载中
   if (phase === 'loading') {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
@@ -50,7 +58,6 @@ export default function App() {
     )
   }
 
-  // 错误
   if (error) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-6">
@@ -67,7 +74,6 @@ export default function App() {
     )
   }
 
-  // 数据未就绪
   if (directors.length === 0) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
@@ -80,7 +86,14 @@ export default function App() {
     <>
       {phase === 'start' && <StartScreen onStart={handleStart} />}
       {phase === 'quiz' && <Quiz directors={directors} onComplete={handleComplete} />}
-      {phase === 'result' && result && <Result result={result} onRestart={handleRestart} />}
+      {phase === 'result' && result && quizData && (
+        <Result
+          result={result}
+          questions={quizData.questions}
+          answers={quizData.answers}
+          onRestart={handleRestart}
+        />
+      )}
     </>
   )
 }
