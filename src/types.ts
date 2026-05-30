@@ -65,6 +65,15 @@ export interface QuizQuestion {
   order: AnswerChoice[]
 }
 
+/** AI 分析结果 */
+export interface AIAnalysis {
+  typeId: string
+  matchScore: number
+  matchReason: string
+  roast: string
+  recommendations: string[]
+}
+
 /** 分析结果 */
 export interface QuizResult {
   type: DBTIType

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Share2, RefreshCw, Sparkles, Film, Eye, Heart,
+  Share2, RefreshCw, Sparkles, Film, Eye, Heart, Brain,
   ChevronDown, Star, Flame, Gem, Clapperboard, HelpCircle,
 } from 'lucide-react'
-import type { QuizResult, Answer, QuizQuestion, AnswerChoice, Director } from '@/types'
+import type { QuizResult, Answer, QuizQuestion, AnswerChoice, Director, AIAnalysis } from '@/types'
 import { getRarityLabel } from '@/data/quiz-analyzer'
 import { cn } from '@/lib/utils'
 import { TasteBar } from './TasteBar'
@@ -15,6 +15,7 @@ interface ResultProps {
   result: QuizResult
   questions: QuizQuestion[]
   answers: Answer[]
+  aiAnalysis?: AIAnalysis | null
   onRestart: () => void
 }
 
@@ -36,7 +37,7 @@ function getWorkByChoice(q: QuizQuestion, choice: AnswerChoice) {
   }
 }
 
-export function Result({ result, questions, answers, onRestart }: ResultProps) {
+export function Result({ result, questions, answers, aiAnalysis, onRestart }: ResultProps) {
   const { type, knownCount, matchScore } = result
   const [showReview, setShowReview] = useState(false)
   const [showShareCard, setShowShareCard] = useState(false)
@@ -183,12 +184,56 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
           <p className="text-sm text-zinc-300 leading-relaxed">{type.description}</p>
         </motion.div>
 
+        {/* === AI 分析（如果有） === */}
+        {aiAnalysis && (
+          <motion.div
+            className="bg-zinc-900/60 rounded-2xl border border-emerald-800/40 p-6 mb-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1 }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Brain className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-semibold text-emerald-300">🧠 AI 实时分析</span>
+            </div>
+
+            {/* 匹配分析 */}
+            <div className="mb-4">
+              <div className="text-xs text-zinc-500 mb-1.5">匹配分析</div>
+              <p className="text-sm text-zinc-300 leading-relaxed">{aiAnalysis.matchReason}</p>
+            </div>
+
+            {/* 锐评 */}
+            <div className="mb-4 p-4 rounded-xl bg-zinc-800/60 border border-zinc-700/50">
+              <div className="text-xs text-rose-400 mb-1.5 font-medium">💬 锐评</div>
+              <p className="text-sm text-zinc-200 leading-relaxed">{aiAnalysis.roast}</p>
+            </div>
+
+            {/* AI 推荐片单 */}
+            {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+              <div>
+                <div className="text-xs text-zinc-500 mb-2">AI 额外推荐</div>
+                <div className="flex flex-wrap gap-2">
+                  {aiAnalysis.recommendations.map((rec: string) => (
+                    <span
+                      key={rec}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                    >
+                      {rec}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {/* === 精神导演 + 推荐片单 === */}
         <motion.div
           className="bg-zinc-900/60 rounded-2xl border border-zinc-800 p-6 mb-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2 }}
+          transition={{ delay: aiAnalysis ? 1.4 : 1.2 }}
         >
           <div className="flex items-center gap-2 mb-3">
             <Film className="w-4 h-4" style={{ color: type.color }} />

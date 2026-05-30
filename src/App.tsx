@@ -4,7 +4,7 @@ import { Quiz } from '@/components/Quiz'
 import { Result } from '@/components/Result'
 import { HistoryPage } from '@/components/HistoryPage'
 import { TypeExplorer } from '@/components/TypeExplorer'
-import type { QuizResult, Director, Answer, QuizQuestion } from '@/types'
+import type { QuizResult, Director, Answer, QuizQuestion, AIAnalysis } from '@/types'
 
 type Phase = 'loading' | 'start' | 'quiz' | 'result' | 'history' | 'explore'
 
@@ -15,6 +15,7 @@ export default function App() {
   const [quizData, setQuizData] = useState<{
     questions: QuizQuestion[]
     answers: Answer[]
+    aiAnalysis: AIAnalysis | null
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,9 +46,10 @@ export default function App() {
     quizResult: QuizResult,
     questions: QuizQuestion[],
     answers: Answer[],
+    aiAnalysis: AIAnalysis | null,
   ) => {
     setResult(quizResult)
-    setQuizData({ questions, answers })
+    setQuizData({ questions, answers, aiAnalysis })
     setPhase('result')
   }
 
@@ -103,6 +105,7 @@ export default function App() {
           result={result}
           questions={quizData.questions}
           answers={quizData.answers}
+          aiAnalysis={quizData.aiAnalysis}
           onRestart={handleRestart}
         />
       )}
