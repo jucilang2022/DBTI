@@ -13,9 +13,9 @@ interface QuestionCardProps {
 
 const OPTION_META: Record<AnswerChoice, { label: string; icon: string; hint: string }> = {
   famous: { label: '代表作', icon: '⭐', hint: '这位导演最广为人知的作品' },
-  controversial: { label: '争议之作', icon: '🔥', hint: '口碑两极分化或偏离导演一贯风格的作品' },
-  hidden: { label: '小众佳作', icon: '💎', hint: '被低估的冷门好片，资深影迷必选' },
-  other: { label: '其他作品', icon: '🎬', hint: '除了以上这些，你最爱导的这部' },
+  controversial: { label: '低分但不是很低', icon: '🎯', hint: '评分不高但你有自己的品味判断' },
+  hidden: { label: '小众佳片', icon: '💎', hint: '被低估的冷门好片，资深影迷必选' },
+  other: { label: '其他作品', icon: '🎬', hint: '除了以上这些，你更爱导演的这部遗珠' },
   unknown: { label: '没看过任何一部', icon: '❓', hint: '这位导演暂时不在你的片单里' },
 }
 

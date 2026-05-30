@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import type { QuizResult, Answer, QuizQuestion, AnswerChoice, Director, AIAnalysis } from '@/types'
 import { getRarityLabel } from '@/data/quiz-analyzer'
+import { getDimensionLabels } from '@/data/dbti-types'
 import { cn } from '@/lib/utils'
 import { TasteBar } from './TasteBar'
 import { ShareCard } from './ShareCard'
@@ -21,8 +22,8 @@ interface ResultProps {
 
 const CHOICE_META: Record<AnswerChoice, { label: string; icon: React.ReactNode; color: string }> = {
   famous: { label: '代表作', icon: <Star className="w-3.5 h-3.5" />, color: 'text-amber-400' },
-  controversial: { label: '争议之作', icon: <Flame className="w-3.5 h-3.5" />, color: 'text-rose-400' },
-  hidden: { label: '小众佳作', icon: <Gem className="w-3.5 h-3.5" />, color: 'text-purple-400' },
+  controversial: { label: '低分但不是很低', icon: <Flame className="w-3.5 h-3.5" />, color: 'text-rose-400' },
+  hidden: { label: '小众佳片', icon: <Gem className="w-3.5 h-3.5" />, color: 'text-purple-400' },
   other: { label: '其他作品', icon: <Clapperboard className="w-3.5 h-3.5" />, color: 'text-blue-400' },
   unknown: { label: '没看过', icon: <HelpCircle className="w-3.5 h-3.5" />, color: 'text-zinc-500' },
 }
@@ -157,6 +158,39 @@ export function Result({ result, questions, answers, aiAnalysis, onRestart }: Re
           >
             {type.nameEn}
           </motion.p>
+
+          {/* 四维字母码 */}
+          {result.typeCode && (
+            <motion.div
+              className="mt-4"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7, duration: 0.4 }}
+            >
+              <div className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700">
+                {result.typeCode.split('').map((letter, i) => (
+                  <span
+                    key={i}
+                    className="text-lg font-mono font-bold tracking-wider"
+                    style={{ color: type.color }}
+                  >
+                    {letter}
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center justify-center gap-3 mt-2">
+                {(() => {
+                  const labels = getDimensionLabels(result.typeCode!)
+                  return labels.map((d, i) => (
+                    <div key={i} className="text-[10px] text-zinc-500">
+                      <span style={{ color: type.color }} className="font-mono">{d.letter}</span>
+                      {' '}{d.label}
+                    </div>
+                  ))
+                })()}
+              </div>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* === Tagline + 稀有度 === */}
@@ -298,7 +332,7 @@ export function Result({ result, questions, answers, aiAnalysis, onRestart }: Re
               {Object.entries(result.choiceCounts).map(([key, count]) => {
                 const label =
                   key === 'famous' ? '⭐代表作' :
-                  key === 'controversial' ? '🔥争议' :
+                  key === 'controversial' ? '🎯低分' :
                   key === 'hidden' ? '💎小众' :
                   key === 'other' ? '🎬其他' :
                   '❓没看过'
@@ -312,15 +346,55 @@ export function Result({ result, questions, answers, aiAnalysis, onRestart }: Re
             </div>
           )}
 
-          {Object.keys(result.dimensions).length > 0 && (
-            <>
-              <div className="flex items-center gap-2 mb-4 pt-2">
-                <Sparkles className="w-4 h-4 text-zinc-400" />
-                <span className="text-sm font-semibold text-white">你的品味光谱</span>
-              </div>
-              <TasteBar dimensions={result.dimensions} />
-            </>
-          )}
+          {/* 四维评分条 */}
+          {result.dimensions && (() => {
+            const dims = result.dimensions
+            const pairs = [
+              { left: '大众 P', lv: dims.p ?? 0, right: 'N 小众', rv: dims.n ?? 0, lc: '#f59e0b', rc: '#a21caf' },
+              { left: '经典 C', lv: dims.c ?? 0, right: 'G 邪典', rv: dims.g ?? 0, lc: '#38bdf8', rc: '#ef4444' },
+              { left: '正统 O', lv: dims.o ?? 0, right: 'A 独到', rv: dims.a ?? 0, lc: '#34d399', rc: '#8b5cf6' },
+              { left: '核心 M', lv: dims.m ?? 0, right: 'S 随性', rv: dims.s ?? 0, lc: '#e879f9', rc: '#6b7280' },
+            ]
+            const maxVal = Math.max(...pairs.flatMap(p => [p.lv, p.rv]), 1)
+            return (
+              <>
+                <div className="flex items-center gap-2 mb-4 pt-2">
+                  <Sparkles className="w-4 h-4 text-zinc-400" />
+                  <span className="text-sm font-semibold text-white">四维人格剖面</span>
+                </div>
+                <div className="space-y-3">
+                  {pairs.map((pair, i) => {
+                    const total = pair.lv + pair.rv
+                    const lpct = total > 0 ? (pair.lv / maxVal) * 100 : 0
+                    const rpct = total > 0 ? (pair.rv / maxVal) * 100 : 0
+                    return (
+                      <div key={i}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span style={{ color: pair.lc }} className="font-semibold">{pair.left}</span>
+                          <span className="text-zinc-600">{pair.lv} vs {pair.rv}</span>
+                          <span style={{ color: pair.rc }} className="font-semibold">{pair.right}</span>
+                        </div>
+                        <div className="flex h-2 rounded-full overflow-hidden bg-zinc-800">
+                          <motion.div
+                            style={{ backgroundColor: pair.lc }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${lpct}%` }}
+                            transition={{ duration: 0.5, delay: 2 + i * 0.1 }}
+                          />
+                          <motion.div
+                            style={{ backgroundColor: pair.rc }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${rpct}%` }}
+                            transition={{ duration: 0.5, delay: 2 + i * 0.1 + 0.15 }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )
+          })()}
         </motion.div>
 
         {/* === 答案回顾 === */}

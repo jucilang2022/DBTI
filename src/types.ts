@@ -77,16 +77,18 @@ export interface AIAnalysis {
 /** 分析结果 */
 export interface QuizResult {
   type: DBTIType
-  /** 各维度的得分（用于展示雷达图或详情） */
+  /** 四维字母编码，如 PCOM、NCAM */
+  typeCode?: string
+  /** 各维度的得分 */
   dimensions: Record<string, number>
   /** 选项分布统计 */
   choiceCounts?: Record<string, number>
-  /** 最喜欢的导演（哪题选了代表作/争议作等） */
+  /** 最喜欢的导演 */
   favoriteDirector: string
   /** 用户已认识的导演数 */
   knownCount: number
   /** 匹配度评分（0-100） */
   matchScore: number
-  /** 选了该导演最早作品的次数（用于怀旧老人检测） */
+  /** 选了该导演最早作品的次数 */
   earliestYearPicks?: number
 }

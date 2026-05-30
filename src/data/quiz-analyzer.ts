@@ -1,23 +1,26 @@
 import type { Answer, DBTIType, QuizResult, Director } from '@/types'
-import { DBTI_TYPES, TRIGGER_TYPES, matchDBTIType } from './dbti-types'
+import { DBTI_TYPES, TRIGGER_TYPES, matchDBTIType, getDimensionLabels } from './dbti-types'
 
 /**
- * 分析用户的 10 个答案，生成 DBTI 结果。
+ * DBTI 四维分析引擎。
  *
- * 算法策略：
- * 1. 统计选项分布 + 检测"最早作品"选择模式
- * 2. 按优先级检查触发式特殊人格
- * 3. 未触发则走 vibe 标签匹配
+ * 每题按选项类别给四个维度加分：
+ *   代表作    → P+1, C+1, O+1, M+1
+ *   小众佳片  → N+1, C+1, -,   M+1
+ *   低分但不是很低 → -,   G+1, A+1, M+1
+ *   其他作品  → -,   -,   A+1, M+1
+ *   没看过    → -,   -,   -,   S+1
+ *
+ * 优先级：触发式特殊人格 > 16型 MBTI 匹配
  */
 export function analyzeQuiz(
   answers: Answer[],
   directors: Director[],
 ): QuizResult {
-  const vibeCounts: Record<string, number> = {}
-  let knownCount = 0
-  let lastKnownName = ''
+  // 四维得分
+  const scores = { p: 0, n: 0, c: 0, g: 0, o: 0, a: 0, m: 0, s: 0 }
 
-  // 选项分布统计
+  // 选项分布统计（用于触发检测）
   const choiceCounts: Record<string, number> = {
     famous: 0,
     controversial: 0,
@@ -26,26 +29,43 @@ export function analyzeQuiz(
     unknown: 0,
   }
 
-  // 「怀旧老人」检测：用户选的是否是该导演最早的作品
+  // 额外检测（怀旧老人）
   let earliestYearPicks = 0
+  let knownCount = 0
+  let lastKnownName = ''
 
   for (const answer of answers) {
     choiceCounts[answer.choice]++
     const director = directors.find((d) => d.id === answer.directorId)
     if (!director) continue
 
-    if (answer.choice === 'unknown') continue
+    if (answer.choice === 'unknown') {
+      scores.s += 1
+      continue
+    }
 
     knownCount++
     lastKnownName = director.name
 
+    // 按选项类别记分
+    switch (answer.choice) {
+      case 'famous':
+        scores.p += 1; scores.c += 1; scores.o += 1; scores.m += 1
+        break
+      case 'hidden':
+        scores.n += 1; scores.c += 1; scores.m += 1
+        break
+      case 'controversial':
+        scores.g += 1; scores.a += 1; scores.m += 1
+        break
+      case 'other':
+        scores.a += 1; scores.m += 1
+        break
+    }
+
+    // 怀旧老人检测：选了最早的作品
     const work = getWorkByChoice(director, answer.choice)
     if (work) {
-      for (const vibe of work.vibes) {
-        vibeCounts[vibe] = (vibeCounts[vibe] ?? 0) + 1
-      }
-
-      // 检测是否选了该导演最早的作品
       const allWorks = [
         director.famousWork,
         director.controversialWork,
@@ -59,119 +79,71 @@ export function analyzeQuiz(
     }
   }
 
-  // 第一步：检查特殊触发条件（按优先级）
-  const triggeredType = detectTrigger(choiceCounts, earliestYearPicks)
+  // 第一步：检查触发条件
+  const triggeredType = detectTrigger(choiceCounts, earliestYearPicks, scores)
   if (triggeredType) {
-    return buildResult(triggeredType, vibeCounts, choiceCounts, lastKnownName, knownCount, earliestYearPicks)
+    return {
+      type: triggeredType,
+      dimensions: { ...scores },
+      choiceCounts,
+      favoriteDirector: lastKnownName,
+      knownCount,
+      matchScore: 60,
+      earliestYearPicks,
+      typeCode: triggeredType.id,
+    }
   }
 
-  // 第二步：常规 vibe 匹配
-  const matchedType = matchDBTIType(vibeCounts)
+  // 第二步：MBTI 16型匹配
+  const matchedType = matchDBTIType(scores)
+  const code = [scores.p >= scores.n ? 'P' : 'N', scores.c >= scores.g ? 'C' : 'G', scores.o >= scores.a ? 'O' : 'A', scores.m > scores.s ? 'M' : 'S'].join('')
 
-  // 兜底：认识的导演太少
-  if (knownCount <= 2) {
-    const fallback = DBTI_TYPES.find((t) => t.id === 'POET')!
-    return buildResult(fallback, vibeCounts, choiceCounts, lastKnownName, knownCount, earliestYearPicks, 25)
+  // 计算匹配度（基于四个维度的明确程度）
+  const dimClarity = [
+    Math.abs(scores.p - scores.n),
+    Math.abs(scores.c - scores.g),
+    Math.abs(scores.o - scores.a),
+    Math.abs(scores.m - scores.s),
+  ]
+  const maxPossibleClarity = 10 * 4 // 每题给单边最多10分 × 4维
+  const claritySum = dimClarity.reduce((a, b) => a + b, 0)
+  const matchScore = Math.min(95, Math.round((claritySum / 20) * 70 + (knownCount / 10) * 25))
+
+  return {
+    type: matchedType,
+    dimensions: { ...scores },
+    choiceCounts,
+    favoriteDirector: lastKnownName,
+    knownCount,
+    matchScore,
+    earliestYearPicks,
+    typeCode: code,
   }
-
-  return buildResult(matchedType, vibeCounts, choiceCounts, lastKnownName, knownCount, earliestYearPicks)
 }
 
 /**
- * 检测触发式特殊人格（按优先级）
- *
- * 优先级从高到低：
- * 1. unknown ≥ 7 → 影坛白纸 (NEWBIE)
- * 2. famous ≥ 9 → 跟风大队 (CROWD)
- * 3. hidden ≥ 6 → 小众姐/哥 (HIDDEN_SNIFFER)
- * 4. earliest ≥ 8 → 怀旧老人 (OLDPEOPLE)
- * 5. controversial ≥ 6 → 吃瓜群众 (DRAMA)
- * 6. famous ≥ 7 → 大众点评 (MAINSTREAM)
- * 7. unknown ≥ 5 → 牛逼克拉斯 (NBC)
+ * 检测触发式特殊人格（优先级从高到低）。
  */
 function detectTrigger(
   counts: Record<string, number>,
   earliestYearPicks: number,
+  scores: Record<string, number>,
 ): DBTIType | null {
-  // Tier 1: 强信号
-  if (counts.unknown >= 7) {
-    return TRIGGER_TYPES.find((t) => t.id === 'NEWBIE')!
-  }
-  if (counts.famous >= 9) {
-    return TRIGGER_TYPES.find((t) => t.id === 'CROWD')!
-  }
-
-  // Tier 2: 中等信号
-  if (counts.hidden >= 6) {
-    return TRIGGER_TYPES.find((t) => t.id === 'HIDDEN_SNIFFER')!
-  }
-  if (earliestYearPicks >= 8) {
-    return TRIGGER_TYPES.find((t) => t.id === 'OLDPEOPLE')!
-  }
-  if (counts.controversial >= 6) {
-    return TRIGGER_TYPES.find((t) => t.id === 'DRAMA')!
-  }
-
-  // Tier 3: 弱信号
-  if (counts.famous >= 7) {
-    return TRIGGER_TYPES.find((t) => t.id === 'MAINSTREAM')!
-  }
-  if (counts.unknown >= 5) {
-    return TRIGGER_TYPES.find((t) => t.id === 'NBC')!
-  }
-
+  if (counts.unknown >= 7) return TRIGGER_TYPES.find((t) => t.id === 'NEWBIE')!
+  if (counts.famous >= 9) return TRIGGER_TYPES.find((t) => t.id === 'CROWD')!
+  if (earliestYearPicks >= 8) return TRIGGER_TYPES.find((t) => t.id === 'OLDPEOPLE')!
+  if (counts.unknown >= 5) return TRIGGER_TYPES.find((t) => t.id === 'NBC')!
   return null
 }
 
 function getWorkByChoice(director: Director, choice: string) {
   switch (choice) {
-    case 'famous':
-      return director.famousWork
-    case 'controversial':
-      return director.controversialWork
-    case 'hidden':
-      return director.hiddenGem
-    case 'other':
-      return director.otherWork
-    default:
-      return null
+    case 'famous': return director.famousWork
+    case 'controversial': return director.controversialWork
+    case 'hidden': return director.hiddenGem
+    case 'other': return director.otherWork
+    default: return null
   }
-}
-
-function buildResult(
-  type: DBTIType,
-  vibeCounts: Record<string, number>,
-  choiceCounts: Record<string, number>,
-  favoriteDirector: string,
-  knownCount: number,
-  earliestYearPicks?: number,
-  overrideScore?: number,
-): QuizResult {
-  const matchScore = overrideScore ?? calculateMatchScore(vibeCounts, type)
-  return {
-    type,
-    dimensions: vibeCounts,
-    choiceCounts,
-    favoriteDirector,
-    knownCount,
-    matchScore,
-    earliestYearPicks: earliestYearPicks ?? 0,
-  }
-}
-
-function calculateMatchScore(
-  vibeCounts: Record<string, number>,
-  type: DBTIType,
-): number {
-  const total = Object.values(vibeCounts).reduce((a, b) => a + b, 0)
-  if (total === 0) return 30
-
-  let matchedVibes = 0
-  for (const tag of type.tags) {
-    matchedVibes += vibeCounts[tag] ?? 0
-  }
-
-  return Math.round((matchedVibes / total) * 100)
 }
 
 export function getRarityLabel(rarity: string): string {
