@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { HelpCircle } from 'lucide-react'
+import { Info } from 'lucide-react'
 import type { Director, AnswerChoice } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -11,12 +11,12 @@ interface QuestionCardProps {
   onSelect: (choice: AnswerChoice) => void
 }
 
-const OPTION_LABELS: Record<AnswerChoice, { label: string; icon: string }> = {
-  famous: { label: '代表作', icon: '⭐' },
-  controversial: { label: '争议之作', icon: '🔥' },
-  hidden: { label: '小众佳作', icon: '💎' },
-  other: { label: '其他作品', icon: '🎬' },
-  unknown: { label: '没看过任何一部', icon: '❓' },
+const OPTION_META: Record<AnswerChoice, { label: string; icon: string; hint: string }> = {
+  famous: { label: '代表作', icon: '⭐', hint: '这位导演最广为人知的作品' },
+  controversial: { label: '争议之作', icon: '🔥', hint: '口碑两极分化或偏离导演一贯风格的作品' },
+  hidden: { label: '小众佳作', icon: '💎', hint: '被低估的冷门好片，资深影迷必选' },
+  other: { label: '其他作品', icon: '🎬', hint: '除了以上这些，你最爱导的这部' },
+  unknown: { label: '没看过任何一部', icon: '❓', hint: '这位导演暂时不在你的片单里' },
 }
 
 function getChoiceColor(choice: AnswerChoice): string {
@@ -87,10 +87,15 @@ export function QuestionCard({
         <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{director.bio}</p>
       </div>
 
+      {/* 题干 */}
+      <p className="text-sm text-zinc-300 mb-4 font-medium">
+        以下作品中，你最喜欢的是：
+      </p>
+
       {/* 选项 */}
       <div className="space-y-2.5">
         {order.map((choice, idx) => {
-          const opt = OPTION_LABELS[choice]
+          const opt = OPTION_META[choice]
           const work =
             choice === 'famous'
               ? director.famousWork
@@ -118,9 +123,17 @@ export function QuestionCard({
             >
               <div className="flex items-start gap-3">
                 <span className="text-lg shrink-0 mt-0.5">{opt.icon}</span>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-white mb-0.5">
-                    {opt.label}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-sm font-semibold text-white">
+                      {opt.label}
+                    </span>
+                    <span
+                      className="text-[10px] text-zinc-600 group-hover:text-zinc-500 transition-colors"
+                      title={opt.hint}
+                    >
+                      <Info className="w-3 h-3" />
+                    </span>
                   </div>
                   {work ? (
                     <div className="text-xs text-zinc-400">

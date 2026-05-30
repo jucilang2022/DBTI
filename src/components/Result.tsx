@@ -4,11 +4,12 @@ import {
   Share2, RefreshCw, Sparkles, Film, Eye, Heart,
   ChevronDown, Star, Flame, Gem, Clapperboard, HelpCircle,
 } from 'lucide-react'
-import type { QuizResult, Answer, QuizQuestion, AnswerChoice } from '@/types'
+import type { QuizResult, Answer, QuizQuestion, AnswerChoice, Director } from '@/types'
 import { getRarityLabel } from '@/data/quiz-analyzer'
 import { cn } from '@/lib/utils'
 import { TasteBar } from './TasteBar'
 import { ShareCard } from './ShareCard'
+import { DirectorDetail } from './DirectorDetail'
 
 interface ResultProps {
   result: QuizResult
@@ -39,6 +40,7 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
   const { type, knownCount, matchScore } = result
   const [showReview, setShowReview] = useState(false)
   const [showShareCard, setShowShareCard] = useState(false)
+  const [detailDirector, setDetailDirector] = useState<Director | null>(null)
 
   // 保存结果到 localStorage
   useEffect(() => {
@@ -284,9 +286,10 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
                     const meta = CHOICE_META[a.choice]
                     const work = getWorkByChoice(q, a.choice)
                     return (
-                      <div
+                      <button
                         key={q.director.id}
-                        className="flex items-start gap-3 p-3 rounded-xl bg-zinc-800/40"
+                        onClick={() => setDetailDirector(q.director)}
+                        className="w-full flex items-start gap-3 p-3 rounded-xl bg-zinc-800/40 hover:bg-zinc-800/70 transition-colors text-left"
                       >
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
@@ -310,7 +313,7 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
@@ -342,6 +345,12 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
           重新测试
         </motion.button>
       </div>
+
+      {/* 导演详情弹窗 */}
+      <DirectorDetail
+        director={detailDirector}
+        onClose={() => setDetailDirector(null)}
+      />
 
       {/* 分享卡片弹窗 */}
       <ShareCard
