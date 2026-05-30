@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Share2, RefreshCw, Sparkles, Film, Eye, Heart,
@@ -7,6 +7,8 @@ import {
 import type { QuizResult, Answer, QuizQuestion, AnswerChoice } from '@/types'
 import { getRarityLabel } from '@/data/quiz-analyzer'
 import { cn } from '@/lib/utils'
+import { TasteBar } from './TasteBar'
+import { ShareCard } from './ShareCard'
 
 interface ResultProps {
   result: QuizResult
@@ -36,8 +38,24 @@ function getWorkByChoice(q: QuizQuestion, choice: AnswerChoice) {
 export function Result({ result, questions, answers, onRestart }: ResultProps) {
   const { type, knownCount, matchScore } = result
   const [showReview, setShowReview] = useState(false)
+  const [showShareCard, setShowShareCard] = useState(false)
 
-  const renderShareCard = () => {
+  // 保存结果到 localStorage
+  useEffect(() => {
+    try {
+      const history = JSON.parse(localStorage.getItem('dbti_history') || '[]')
+      history.unshift({
+        typeId: type.id,
+        typeName: type.name,
+        matchScore,
+        knownCount,
+        timestamp: new Date().toISOString(),
+      })
+      localStorage.setItem('dbti_history', JSON.stringify(history.slice(0, 20)))
+    } catch {}
+  }, [type, matchScore, knownCount])
+
+  const renderShareText = () => {
     const lines = [
       '🎬 DBTI 导演人格测试结果',
       '',
@@ -56,13 +74,15 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
 
   const handleShare = async () => {
     if (navigator.share) {
+      // 有原生分享：弹出菜单让用户选择分享方式
       await navigator.share({
         title: 'DBTI 导演人格测试',
-        text: renderShareCard(),
+        text: renderShareText(),
         url: window.location.href,
       })
     } else {
-      await navigator.clipboard.writeText(renderShareCard())
+      // 无原生分享：打开分享卡片
+      setShowShareCard(true)
     }
   }
 
@@ -151,7 +171,7 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
           <p className="text-sm text-zinc-300 leading-relaxed">{type.description}</p>
         </motion.div>
 
-        {/* === 精神导演 + 推荐片单（合并） === */}
+        {/* === 精神导演 + 推荐片单 === */}
         <motion.div
           className="bg-zinc-900/60 rounded-2xl border border-zinc-800 p-6 mb-4"
           initial={{ opacity: 0, y: 20 }}
@@ -186,7 +206,7 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
           </div>
         </motion.div>
 
-        {/* === Quote === */}
+        {/* === 金句 === */}
         <motion.div
           className="text-center mb-8"
           initial={{ opacity: 0 }}
@@ -196,25 +216,37 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
           <p className="text-xs text-zinc-500 italic leading-relaxed">{type.quote}</p>
         </motion.div>
 
-        {/* === 统计 === */}
+        {/* === 统计 + 品味条 === */}
         <motion.div
-          className="flex items-center justify-center gap-8 mb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          className="bg-zinc-900/60 rounded-2xl border border-zinc-800 p-6 mb-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.6 }}
         >
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white">{result.matchScore}%</div>
-            <div className="text-xs text-zinc-500 mt-1">匹配度</div>
+          <div className="flex items-center justify-center gap-8 mb-6">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-white">{result.matchScore}%</div>
+              <div className="text-xs text-zinc-500 mt-1">匹配度</div>
+            </div>
+            <div className="w-px h-12 bg-zinc-800" />
+            <div className="text-center">
+              <div className="text-3xl font-bold text-white">{knownCount}/10</div>
+              <div className="text-xs text-zinc-500 mt-1">认识导演</div>
+            </div>
           </div>
-          <div className="w-px h-12 bg-zinc-800" />
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white">{knownCount}/10</div>
-            <div className="text-xs text-zinc-500 mt-1">认识导演</div>
-          </div>
+
+          {Object.keys(result.dimensions).length > 0 && (
+            <>
+              <div className="flex items-center gap-2 mb-4 pt-2 border-t border-zinc-800">
+                <Sparkles className="w-4 h-4 text-zinc-400" />
+                <span className="text-sm font-semibold text-white">你的品味光谱</span>
+              </div>
+              <TasteBar dimensions={result.dimensions} />
+            </>
+          )}
         </motion.div>
 
-        {/* === 答案回顾（折叠） === */}
+        {/* === 答案回顾 === */}
         <motion.div
           className="bg-zinc-900/60 rounded-2xl border border-zinc-800 overflow-hidden mb-8"
           initial={{ opacity: 0, y: 20 }}
@@ -287,7 +319,7 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
           </AnimatePresence>
         </motion.div>
 
-        {/* === 分享结果 === */}
+        {/* === 操作按钮 === */}
         <motion.button
           onClick={handleShare}
           className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-amber-600 text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity mb-3"
@@ -299,7 +331,6 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
           分享结果
         </motion.button>
 
-        {/* === 重新测试 === */}
         <motion.button
           onClick={onRestart}
           className="w-full py-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-300 font-semibold flex items-center justify-center gap-2 hover:bg-zinc-800 transition-colors"
@@ -311,6 +342,15 @@ export function Result({ result, questions, answers, onRestart }: ResultProps) {
           重新测试
         </motion.button>
       </div>
+
+      {/* 分享卡片弹窗 */}
+      <ShareCard
+        open={showShareCard}
+        onClose={() => setShowShareCard(false)}
+        type={type}
+        matchScore={matchScore}
+        knownCount={knownCount}
+      />
     </div>
   )
 }
