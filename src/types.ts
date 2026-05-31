@@ -87,6 +87,35 @@ export interface ValueAnswer {
   selectedIndex: number
 }
 
+export interface CompareDirector {
+  id: string
+  name: string
+  nameEn: string
+  style: string
+  dims: Record<string, number>
+}
+
+export interface DirectorCompareQuestion {
+  id: string
+  question: string
+  directors: CompareDirector[]
+}
+
+export interface ChoiceQuestion {
+  id: string
+  type: 'value' | 'scenario' | 'self_cognition'
+  question: string
+  options: { text: string; dims: Record<string, number> }[]
+}
+
+export interface QuizAnswer {
+  questionType: 'director_work' | 'director_compare' | 'value' | 'scenario' | 'self_cognition'
+  questionId: string
+  selectedIndex: number
+  directorId?: string
+  choice?: 'famous' | 'controversial' | 'hidden' | 'other' | 'unknown'
+}
+
 /** AI 分析结果 */
 export interface AIAnalysis {
   typeId: string

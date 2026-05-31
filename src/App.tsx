@@ -4,7 +4,7 @@ import { Quiz } from '@/components/Quiz'
 import { Result } from '@/components/Result'
 import { HistoryPage } from '@/components/HistoryPage'
 import { TypeExplorer } from '@/components/TypeExplorer'
-import type { QuizResult, Director, Answer, QuizQuestion, AIAnalysis } from '@/types'
+import type { QuizResult, Director, Answer, QuizQuestion, AIAnalysis, QuizAnswer } from '@/types'
 import { Button, PageShell } from '@/components/ui/layout'
 
 type Phase = 'loading' | 'start' | 'quiz' | 'result' | 'history' | 'explore'
@@ -15,6 +15,13 @@ interface StoredResultEntry {
   questions: QuizQuestion[]
   answers: Answer[]
   aiAnalysis?: AIAnalysis | null
+}
+
+interface QuizDataState {
+  questions: QuizQuestion[]
+  answers: QuizAnswer[]
+  aiAnalysis: AIAnalysis | null
+  resultId: string
 }
 
 function createResultId(): string {
@@ -32,12 +39,7 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [directors, setDirectors] = useState<Director[]>([])
   const [result, setResult] = useState<QuizResult | null>(null)
-  const [quizData, setQuizData] = useState<{
-    questions: QuizQuestion[]
-    answers: Answer[]
-    aiAnalysis: AIAnalysis | null
-    resultId: string
-  } | null>(null)
+  const [quizData, setQuizData] = useState<QuizDataState | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -66,7 +68,7 @@ export default function App() {
   const handleComplete = (
     quizResult: QuizResult,
     questions: QuizQuestion[],
-    answers: Answer[],
+    answers: QuizAnswer[],
     aiAnalysis: AIAnalysis | null,
   ) => {
     setResult(quizResult)
@@ -86,10 +88,18 @@ export default function App() {
   }
 
   const handleSelectHistoryResult = (entry: StoredResultEntry) => {
+    // 将 localStorage 中存储的旧 Answer[] 转为 QuizAnswer[]
+    const convertedAnswers: QuizAnswer[] = entry.answers.map((a) => ({
+      questionType: 'director_work' as const,
+      questionId: a.directorId,
+      selectedIndex: 0,
+      directorId: a.directorId,
+      choice: a.choice,
+    }))
     setResult(entry.result)
     setQuizData({
       questions: entry.questions,
-      answers: entry.answers,
+      answers: convertedAnswers,
       aiAnalysis: entry.aiAnalysis ?? null,
       resultId: entry.id,
     })

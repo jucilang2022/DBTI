@@ -4,7 +4,7 @@ import {
   Share2, RefreshCw, Sparkles, Film, Eye, Heart, Brain,
   ChevronDown, Star, Flame, Gem, Clapperboard, HelpCircle,
 } from 'lucide-react'
-import type { QuizResult, Answer, QuizQuestion, AnswerChoice, AIAnalysis } from '@/types'
+import type { QuizResult, Answer, QuizQuestion, AnswerChoice, AIAnalysis, QuizAnswer } from '@/types'
 import { getRarityLabel } from '@/data/quiz-analyzer'
 import { DBTI_TYPES, getDimensionLabels } from '@/data/dbti-types'
 import { cn } from '@/lib/utils'
@@ -15,7 +15,7 @@ import { buttonClasses } from '@/components/ui/buttonStyles'
 interface ResultProps {
   result: QuizResult
   questions: QuizQuestion[]
-  answers: Answer[]
+  answers: QuizAnswer[]
   aiAnalysis?: AIAnalysis | null
   resultId: string
   onRestart: () => void
@@ -42,6 +42,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
   const typeCode = result.typeCode?.trim().toUpperCase()
   const type = (typeCode ? DBTI_TYPES.find((t) => t.id === typeCode) : null) ?? result.type
   const { knownCount, matchScore } = result
+  const totalQuestions = answers.length
   const [showReview, setShowReview] = useState(false)
   const [showShareCard, setShowShareCard] = useState(false)
 
@@ -50,6 +51,13 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
     try {
       const history = JSON.parse(localStorage.getItem('dbti_history') || '[]')
       if (history.some((entry: { id?: string }) => entry.id === resultId)) return
+
+      // 将 QuizAnswer[] 转为 Answer[] 存储（历史兼容）
+      const historyAnswers: Answer[] = answers
+        .filter((a): a is QuizAnswer & { directorId: string; choice: AnswerChoice } =>
+          a.questionType === 'director_work' && !!a.directorId && !!a.choice
+        )
+        .map((a) => ({ directorId: a.directorId, choice: a.choice }))
 
       history.unshift({
         id: resultId,
@@ -60,7 +68,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
         timestamp: new Date().toISOString(),
         result,
         questions,
-        answers,
+        answers: historyAnswers,
         aiAnalysis: aiAnalysis ?? null,
       })
       localStorage.setItem('dbti_history', JSON.stringify(history.slice(0, 20)))
@@ -85,7 +93,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
       `🧑‍🎨 你的类型：${type.name}（${type.nameEn}）`,
       `📝 「${type.tagline}」`,
       `🎯 匹配度：${matchScore}%`,
-      `🎭 认识 ${knownCount}/10 位导演`,
+      `🎭 有效回答 ${knownCount}/${totalQuestions} 题`,
       choiceEmojis ? `📊 ${choiceEmojis}` : '',
       '',
       `✨ 精神导演：${type.spiritDirector}`,
@@ -110,10 +118,18 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
     }
   }
 
-  const answerPairs: { q: QuizQuestion; a: Answer }[] = questions.map((q, i) => ({
-    q,
-    a: answers[i],
-  }))
+  // 从 QuizAnswer[] 中提取导演作品题的回答，与 questions 匹配
+  const directorAnswers = answers.filter((a) => a.questionType === 'director_work')
+  const answerPairs: { q: QuizQuestion; a: Answer }[] = questions
+    .map((q) => {
+      const matchingAnswer = directorAnswers.find((da) => da.directorId === q.director.id)
+      if (!matchingAnswer || !matchingAnswer.choice) return null
+      return {
+        q,
+        a: { directorId: q.director.id, choice: matchingAnswer.choice },
+      }
+    })
+    .filter((pair): pair is { q: QuizQuestion; a: Answer } => pair !== null)
 
   return (
     <PageShell
@@ -337,8 +353,8 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
             </div>
             <div className="w-px h-12 bg-zinc-800" />
             <div className="text-center">
-              <div className="text-3xl font-bold text-white">{knownCount}/10</div>
-              <div className="text-xs text-zinc-500 mt-1">认识导演</div>
+              <div className="text-3xl font-bold text-white">{knownCount}/{totalQuestions}</div>
+              <div className="text-xs text-zinc-500 mt-1">有效回答</div>
             </div>
           </div>
 
@@ -427,7 +443,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
             <div className="flex items-center gap-2">
               <Clapperboard className="w-4 h-4 text-zinc-400" />
               <span className="text-sm font-semibold text-white">回顾你的选择</span>
-              <span className="text-xs text-zinc-500 ml-1">({knownCount} 位认识)</span>
+              <span className="text-xs text-zinc-500 ml-1">({knownCount} 题有效)</span>
             </div>
             <ChevronDown
               className={cn(

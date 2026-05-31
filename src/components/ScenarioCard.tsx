@@ -1,26 +1,27 @@
 import { motion } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
-import type { ValueQuestion } from '@/types'
+import { Clapperboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { ChoiceQuestion } from '@/types'
 
-interface ValueQuestionCardProps {
-  question: ValueQuestion
+interface ScenarioCardProps {
+  question: ChoiceQuestion
   questionIndex: number
   totalQuestions: number
   onSelect: (optionIndex: number) => void
 }
 
 const OPTION_STYLES = [
-  'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/15 hover:border-amber-500/50',
-  'border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/15 hover:border-purple-500/50',
+  'border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15 hover:border-emerald-500/50',
+  'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/15 hover:border-blue-500/50',
+  'border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/15 hover:border-rose-500/50',
 ]
 
-export function ValueQuestionCard({
+export function ScenarioCard({
   question,
   questionIndex,
   totalQuestions,
   onSelect,
-}: ValueQuestionCardProps) {
+}: ScenarioCardProps) {
   const progress = ((questionIndex + 1) / totalQuestions) * 100
 
   return (
@@ -55,9 +56,9 @@ export function ValueQuestionCard({
       {/* 题干 */}
       <div className="mb-9">
         <div className="flex items-center gap-2.5 mb-4">
-          <Sparkles className="w-4 h-4 text-emerald-400" />
+          <Clapperboard className="w-4 h-4 text-emerald-400" />
           <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-            价值观选择
+            情景选择
           </span>
         </div>
         <h2 className="text-xl font-bold leading-snug text-white">
@@ -65,7 +66,7 @@ export function ValueQuestionCard({
         </h2>
       </div>
 
-      {/* 选项 — 两列 */}
+      {/* 选项 */}
       <div className="grid grid-cols-1 gap-3">
         {question.options.map((option, idx) => (
           <motion.button

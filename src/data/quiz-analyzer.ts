@@ -1,90 +1,140 @@
-import type { Answer, ValueAnswer, QuizResult, Director, ValueQuestion } from '@/types'
+import type { QuizAnswer, Director, ChoiceQuestion, DirectorCompareQuestion, QuizResult } from '@/types'
 import { DBTI_TYPES } from './dbti-types'
 
 /**
- * DBTI 分析引擎（重写版 — 维度直算）。
+ * DBTI 分析引擎 — 通用维度映射版。
  *
- * 不再使用原型向量 + bias 匹配，改为：
- *   1. 导演题 → 按选项类别累加四维分数
- *   2. 价值观题 → 直接按选项映射累加维度分数
- *   3. 合并各维度分数 → 取正负方向得到 4 位字母编码
- *
- * 数据来源更丰富（导演题 + 价值观题），每道题的信号更干净。
+ * 接收 5 种题型的回答数据，分别处理：
+ *   - director_work：按选项类别（choice）映射到维度
+ *   - director_compare：从所选导演的 dims 累加
+ *   - value / scenario / self_cognition：从所选选项的 dims 累加
  */
 export function analyzeQuiz(
-  answers: Answer[],
-  valueAnswers: ValueAnswer[],
+  answers: QuizAnswer[],
   directors: Director[],
-  valueQuestions: ValueQuestion[],
+  compareQuestions: DirectorCompareQuestion[],
+  valueQuestions: ChoiceQuestion[],
+  scenarioQuestions: ChoiceQuestion[],
+  selfCognitionQuestions: ChoiceQuestion[],
 ): QuizResult {
   /* ---- 1. 初始化维度分数 ---- */
   const dims = { p: 0, n: 0, c: 0, g: 0, o: 0, a: 0, m: 0, s: 0 }
 
-  /* ---- 2. 处理导演题 ---- */
+  /* ---- 2. 处理各题型 ---- */
   let knownCount = 0
   let lastKnownName = ''
   let earliestYearPicks = 0
-
-  for (const answer of answers) {
-    const director = directors.find((d) => d.id === answer.directorId)
-    if (!director) continue
-
-    if (answer.choice === 'unknown') {
-      dims.s += 1
-      continue
-    }
-
-    knownCount++
-    lastKnownName = director.name
-
-    // 选项类别 → 维度映射（与之前保持一致）
-    switch (answer.choice) {
-      case 'famous':
-        dims.p += 1; dims.c += 1; dims.o += 1; dims.m += 1
-        break
-      case 'hidden':
-        dims.n += 1; dims.c += 1; dims.m += 1
-        break
-      case 'controversial':
-        dims.g += 1; dims.a += 1; dims.m += 1
-        break
-      case 'other':
-        dims.a += 1; dims.m += 1
-        break
-    }
-
-    // 怀旧检测：选了该导演最早期的作品
-    const work = getWorkByChoice(director, answer.choice)
-    if (work) {
-      const earliestYear = Math.min(
-        director.famousWork.year,
-        director.controversialWork.year,
-        director.hiddenGem.year,
-      )
-      if (work.year === earliestYear) earliestYearPicks++
-    }
+  const choiceCounts: Record<string, number> = {
+    famous: 0, controversial: 0, hidden: 0, other: 0, unknown: 0,
   }
 
-  /* ---- 3. 处理价值观题 ---- */
-  for (const va of valueAnswers) {
-    const q = valueQuestions.find((q) => q.id === va.questionId)
-    if (!q) continue
-    const option = q.options[va.selectedIndex]
-    if (!option) continue
+  for (const answer of answers) {
+    switch (answer.questionType) {
+      case 'director_work': {
+        const director = directors.find((d) => d.id === answer.directorId)
+        if (!director) continue
 
-    for (const [dim, val] of Object.entries(option.dims)) {
-      const key = dim as keyof typeof dims
-      if (key in dims) {
-        dims[key] += val
+        const c = answer.choice
+        if (!c || c === 'unknown') {
+          dims.s += 1
+          choiceCounts.unknown = (choiceCounts.unknown ?? 0) + 1
+          continue
+        }
+
+        knownCount++
+        lastKnownName = director.name
+        choiceCounts[c] = (choiceCounts[c] ?? 0) + 1
+
+        switch (c) {
+          case 'famous':
+            dims.p += 1; dims.c += 1; dims.o += 1; dims.m += 1
+            break
+          case 'hidden':
+            dims.n += 1; dims.c += 1; dims.m += 1
+            break
+          case 'controversial':
+            dims.g += 1; dims.a += 1; dims.m += 1
+            break
+          case 'other':
+            dims.a += 1; dims.m += 1
+            break
+        }
+
+        const work = getWorkByChoice(director, c)
+        if (work) {
+          const earliestYear = Math.min(
+            director.famousWork.year,
+            director.controversialWork.year,
+            director.hiddenGem.year,
+          )
+          if (work.year === earliestYear) earliestYearPicks++
+        }
+        break
+      }
+
+      case 'director_compare': {
+        const q = compareQuestions.find((cq) => cq.id === answer.questionId)
+        if (!q) continue
+        knownCount++
+        const selectedDirector = q.directors[answer.selectedIndex]
+        if (selectedDirector) {
+          for (const [dim, val] of Object.entries(selectedDirector.dims)) {
+            const key = dim as keyof typeof dims
+            if (key in dims) dims[key] += val
+          }
+        }
+        break
+      }
+
+      case 'value': {
+        const q = valueQuestions.find((vq) => vq.id === answer.questionId)
+        if (!q) continue
+        knownCount++
+        const option = q.options[answer.selectedIndex]
+        if (option) {
+          for (const [dim, val] of Object.entries(option.dims)) {
+            const key = dim as keyof typeof dims
+            if (key in dims) dims[key] += val
+          }
+        }
+        break
+      }
+
+      case 'scenario': {
+        const q = scenarioQuestions.find((sq) => sq.id === answer.questionId)
+        if (!q) continue
+        knownCount++
+        const option = q.options[answer.selectedIndex]
+        if (option) {
+          for (const [dim, val] of Object.entries(option.dims)) {
+            const key = dim as keyof typeof dims
+            if (key in dims) dims[key] += val
+          }
+        }
+        break
+      }
+
+      case 'self_cognition': {
+        const q = selfCognitionQuestions.find((scq) => scq.id === answer.questionId)
+        if (!q) continue
+        knownCount++
+        const option = q.options[answer.selectedIndex]
+        if (option) {
+          for (const [dim, val] of Object.entries(option.dims)) {
+            const key = dim as keyof typeof dims
+            if (key in dims) dims[key] += val
+          }
+        }
+        break
       }
     }
   }
 
-  /* ---- 4. 计算最终类型编码 ---- */
+  /* ---- 3. 计算最终类型编码 ---- */
   const code = computeTypeCode(dims)
   const matchedType = DBTI_TYPES.find((t) => t.id === code) ?? DBTI_TYPES[0]
 
-  /* ---- 5. 匹配度评分 ---- */
+  /* ---- 4. 匹配度评分 ---- */
   const clarity = [
     Math.abs(dims.p - dims.n),
     Math.abs(dims.c - dims.g),
@@ -92,7 +142,7 @@ export function analyzeQuiz(
     Math.abs(dims.m - dims.s),
   ]
   const claritySum = clarity.reduce((a, b) => a + b, 0)
-  const totalQuestions = answers.length + valueAnswers.length
+  const totalQuestions = answers.length
   const matchScore = Math.min(
     95,
     Math.round(
@@ -100,18 +150,6 @@ export function analyzeQuiz(
       (knownCount / Math.max(totalQuestions, 1)) * 25,
     ),
   )
-
-  /* ---- 6. 选择分布统计 ---- */
-  const choiceCounts: Record<string, number> = {
-    famous: 0,
-    controversial: 0,
-    hidden: 0,
-    other: 0,
-    unknown: 0,
-  }
-  for (const a of answers) {
-    choiceCounts[a.choice] = (choiceCounts[a.choice] ?? 0) + 1
-  }
 
   return {
     type: matchedType,
@@ -122,8 +160,6 @@ export function analyzeQuiz(
     knownCount,
     matchScore,
     earliestYearPicks,
-    valueAnswers,
-    valueQuestionCount: valueAnswers.length,
   }
 }
 

@@ -1,28 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Film, Brain } from 'lucide-react'
-import type { Director, Answer, AnswerChoice, QuizQuestion, AIAnalysis, ValueQuestion, ValueAnswer } from '@/types'
+import type { Director, AnswerChoice, QuizQuestion, AIAnalysis, QuizAnswer } from '@/types'
 import { pickRandom, shuffle } from '@/lib/utils'
 import { QuestionCard } from './QuestionCard'
-import { ValueQuestionCard } from './ValueQuestionCard'
+import { DirectorCompareCard } from './DirectorCompareCard'
+import { ScenarioCard } from './ScenarioCard'
+import { SelfCognitionCard } from './SelfCognitionCard'
 import { analyzeWithAI } from '@/api/analyze'
 import type { QuizResult } from '@/types'
 import { PageShell } from '@/components/ui/layout'
 import { valueQuestions as allValueQuestions } from '@/data/value-questions'
+import { compareQuestions as allCompareQuestions } from '@/data/director_compare_questions'
+import { scenarioQuestions as allScenarioQuestions } from '@/data/scenario_questions'
+import { selfCognitionQuestions as allSelfCognitionQuestions } from '@/data/self_cognition_questions'
 
 interface QuizProps {
   directors: Director[]
   onBack: () => void
-  onComplete: (result: QuizResult, questions: QuizQuestion[], answers: Answer[], aiAnalysis: AIAnalysis | null) => void
+  onComplete: (result: QuizResult, questions: QuizQuestion[], answers: QuizAnswer[], aiAnalysis: AIAnalysis | null) => void
 }
 
-const DIRECTOR_COUNT = 8
-const VALUE_COUNT = allValueQuestions.length
-const TOTAL_QUESTIONS = DIRECTOR_COUNT + VALUE_COUNT
+const DIRECTOR_WORK_COUNT = 4
+const DIRECTOR_COMPARE_COUNT = 2
+const VALUE_COUNT = 3
+const SCENARIO_COUNT = 4
+const SELF_COUNT = 3
+const TOTAL_QUESTIONS = DIRECTOR_WORK_COUNT + DIRECTOR_COMPARE_COUNT + VALUE_COUNT + SCENARIO_COUNT + SELF_COUNT
 
 type QuizItem =
-  | { kind: 'director'; director: Director; order: AnswerChoice[] }
-  | { kind: 'value'; question: ValueQuestion }
+  | { kind: 'director_work'; director: Director; order: AnswerChoice[] }
+  | { kind: 'director_compare'; question: typeof allCompareQuestions[number] }
+  | { kind: 'value'; question: typeof allValueQuestions[number] }
+  | { kind: 'scenario'; question: typeof allScenarioQuestions[number] }
+  | { kind: 'self_cognition'; question: typeof allSelfCognitionQuestions[number] }
 
 const ANALYZING_PHRASES = [
   '品味校准中...',
@@ -36,77 +47,119 @@ const ANALYZING_PHRASES = [
 export function Quiz({ directors, onBack, onComplete }: QuizProps) {
   /* ---- 创建混合题目列表 ---- */
   const items = useMemo(() => {
-    const picked = pickRandom(directors, DIRECTOR_COUNT)
-    const directorItems: QuizItem[] = picked.map((director) => {
+    // 4 道导演作品题
+    const pickedDirectors = pickRandom(directors, DIRECTOR_WORK_COUNT)
+    const directorItems: QuizItem[] = pickedDirectors.map((director) => {
       const order: AnswerChoice[] = [
         ...shuffle<AnswerChoice>(['famous', 'controversial', 'hidden']),
         'other',
         'unknown',
       ]
-      return { kind: 'director' as const, director, order }
+      return { kind: 'director_work' as const, director, order }
     })
-    const valueItems: QuizItem[] = allValueQuestions.map((q) => ({
+
+    // 2 道导演对比题
+    const compareItems: QuizItem[] = pickRandom(allCompareQuestions, DIRECTOR_COMPARE_COUNT).map((q) => ({
+      kind: 'director_compare' as const,
+      question: q,
+    }))
+
+    // 3 道价值观题（从4道中随机选3）
+    const valueItems: QuizItem[] = pickRandom(allValueQuestions, VALUE_COUNT).map((q) => ({
       kind: 'value' as const,
       question: q,
     }))
 
-    // 合并打乱，但保证第一题是导演题（体验更好）
-    const combined = shuffle(directorItems.slice(1).concat(valueItems))
-    return [directorItems[0], ...combined]
+    // 4 道情景题（从7道中随机选4）
+    const scenarioItems: QuizItem[] = pickRandom(allScenarioQuestions, SCENARIO_COUNT).map((q) => ({
+      kind: 'scenario' as const,
+      question: q,
+    }))
+
+    // 3 道自我认知题（从5道中随机选3）
+    const selfItems: QuizItem[] = pickRandom(allSelfCognitionQuestions, SELF_COUNT).map((q) => ({
+      kind: 'self_cognition' as const,
+      question: q,
+    }))
+
+    // 合并除第一题外的所有题，打乱
+    const rest = shuffle([
+      ...directorItems.slice(1),
+      ...compareItems,
+      ...valueItems,
+      ...scenarioItems,
+      ...selfItems,
+    ])
+
+    // 第一题用导演题或价值观题
+    const firstItem = directorItems[0]
+    return [firstItem, ...rest]
   }, [])
 
-  // 从 items 中提取 questions（给 onComplete 用）
+  // 从 items 中提取 questions（导演作品题，给 onComplete 用）
   const questions = useMemo(() => {
     return items
-      .filter((item): item is QuizItem & { kind: 'director' } => item.kind === 'director')
+      .filter((item): item is QuizItem & { kind: 'director_work' } => item.kind === 'director_work')
       .map((item) => ({ director: item.director, order: item.order }))
   }, [items])
 
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [directorAnswers, setDirectorAnswers] = useState<Answer[]>([])
-  const [valueAnswers, setValueAnswers] = useState<ValueAnswer[]>([])
+  const [quizAnswers, setQuizAnswers] = useState<QuizAnswer[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisPhase, setAnalysisPhase] = useState<'local' | 'ai' | 'done'>('local')
   const [phraseIndex, setPhraseIndex] = useState(0)
 
   const currentItem = items[currentIndex]
 
-  /* ---- 答题处理 ---- */
-  const handleDirectorSelect = useCallback(
-    (choice: AnswerChoice) => {
-      if (currentItem?.kind !== 'director') return
-      const newAnswers = [
-        ...directorAnswers,
-        { directorId: currentItem.director.id, choice },
-      ]
-      setDirectorAnswers(newAnswers)
+  /* ---- 通用答题处理 ---- */
+  const handleSelect = useCallback(
+    (selectedIndex: number) => {
+      if (!currentItem) return
 
-      if (newAnswers.length + valueAnswers.length >= TOTAL_QUESTIONS) {
-        // 所有题答完
+      let newAnswer: QuizAnswer
+
+      switch (currentItem.kind) {
+        case 'director_work': {
+          // selectedIndex maps to order array for director_work
+          const choice = currentItem.order[selectedIndex]
+          newAnswer = {
+            questionType: 'director_work',
+            questionId: currentItem.director.id,
+            selectedIndex,
+            directorId: currentItem.director.id,
+            choice,
+          }
+          break
+        }
+        default:
+          newAnswer = {
+            questionType: currentItem.kind,
+            questionId: currentItem.question.id,
+            selectedIndex,
+          }
+      }
+
+      const newAnswers = [...quizAnswers, newAnswer]
+      setQuizAnswers(newAnswers)
+
+      if (newAnswers.length >= TOTAL_QUESTIONS) {
         setIsAnalyzing(true)
       } else {
         setCurrentIndex((i) => i + 1)
       }
     },
-    [currentItem, directorAnswers, valueAnswers],
+    [currentItem, quizAnswers],
   )
 
-  const handleValueSelect = useCallback(
-    (optionIndex: number) => {
-      if (currentItem?.kind !== 'value') return
-      const newAnswers = [
-        ...valueAnswers,
-        { questionId: currentItem.question.id, selectedIndex: optionIndex },
-      ]
-      setValueAnswers(newAnswers)
-
-      if (directorAnswers.length + newAnswers.length >= TOTAL_QUESTIONS) {
-        setIsAnalyzing(true)
-      } else {
-        setCurrentIndex((i) => i + 1)
-      }
+  /* ---- 兼容 QuestionCard 的回调 ---- */
+  const handleDirectorChoice = useCallback(
+    (choice: AnswerChoice) => {
+      if (currentItem?.kind !== 'director_work') return
+      const idx = currentItem.order.indexOf(choice)
+      if (idx === -1) return
+      handleSelect(idx)
     },
-    [currentItem, directorAnswers, valueAnswers],
+    [currentItem, handleSelect],
   )
 
   /* ---- 分析阶段动画 ---- */
@@ -126,17 +179,18 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
 
       setTimeout(async () => {
         const { result, aiAnalysis } = await analyzeWithAI(
-          directorAnswers,
-          valueAnswers,
+          quizAnswers,
           directors,
+          allCompareQuestions,
           allValueQuestions,
+          allScenarioQuestions,
+          allSelfCognitionQuestions,
         )
         setAnalysisPhase('done')
         setTimeout(() => {
-          onComplete(result, questions, directorAnswers, aiAnalysis)
+          onComplete(result, questions, quizAnswers, aiAnalysis)
         }, 500)
       }, 4000)
-
     }, 1200)
 
     return () => {
@@ -158,22 +212,46 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
         </button>
 
         <AnimatePresence mode="wait">
-          {currentItem.kind === 'director' ? (
+          {currentItem.kind === 'director_work' ? (
             <QuestionCard
               key={`d-${currentItem.director.id}`}
               director={currentItem.director}
               questionIndex={currentIndex}
               totalQuestions={TOTAL_QUESTIONS}
               order={currentItem.order}
-              onSelect={handleDirectorSelect}
+              onSelect={handleDirectorChoice}
             />
-          ) : (
-            <ValueQuestionCard
+          ) : currentItem.kind === 'director_compare' ? (
+            <DirectorCompareCard
+              key={`dc-${currentItem.question.id}`}
+              question={currentItem.question}
+              questionIndex={currentIndex}
+              totalQuestions={TOTAL_QUESTIONS}
+              onSelect={handleSelect}
+            />
+          ) : currentItem.kind === 'value' ? (
+            <ScenarioCard
               key={`v-${currentItem.question.id}`}
               question={currentItem.question}
               questionIndex={currentIndex}
               totalQuestions={TOTAL_QUESTIONS}
-              onSelect={handleValueSelect}
+              onSelect={handleSelect}
+            />
+          ) : currentItem.kind === 'scenario' ? (
+            <ScenarioCard
+              key={`sc-${currentItem.question.id}`}
+              question={currentItem.question}
+              questionIndex={currentIndex}
+              totalQuestions={TOTAL_QUESTIONS}
+              onSelect={handleSelect}
+            />
+          ) : (
+            <SelfCognitionCard
+              key={`self-${currentItem.question.id}`}
+              question={currentItem.question}
+              questionIndex={currentIndex}
+              totalQuestions={TOTAL_QUESTIONS}
+              onSelect={handleSelect}
             />
           )}
         </AnimatePresence>
