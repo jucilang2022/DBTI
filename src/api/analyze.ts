@@ -89,10 +89,35 @@ function buildQuestionPayload(
   return payload
 }
 
+function formatDimScore(value: number): string {
+  const rounded = Math.round(value * 10) / 10
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+}
+
+/** 为 AI 生成本地维度剖面摘要，帮助文案与算法判定一致 */
+function buildDimensionSummary(
+  dims: Record<string, number>,
+  typeCode: string,
+): string {
+  const axes = [
+    { pos: 'p', neg: 'n', posLabel: 'P 大众', negLabel: 'N 特色' },
+    { pos: 'c', neg: 'g', posLabel: 'C 经典', negLabel: 'G 邪典' },
+    { pos: 'o', neg: 'a', posLabel: 'O 正统', negLabel: 'A 独到' },
+    { pos: 'm', neg: 's', posLabel: 'M 迷影', negLabel: 'S 随性' },
+  ] as const
+
+  return axes.map((axis, i) => {
+    const pv = dims[axis.pos] ?? 0
+    const nv = dims[axis.neg] ?? 0
+    const letter = typeCode[i] ?? '-'
+    const winner = pv >= nv ? axis.posLabel : axis.negLabel
+    return `- 第${i + 1}维 → ${letter}（${winner}）：${formatDimScore(pv)} vs ${formatDimScore(nv)}`
+  }).join('\n')
+}
+
 interface AIResponse {
   analysis?: {
     typeId: string
-    matchScore: number
     matchReason: string
     roast: string
     recommendations: string[]
@@ -100,21 +125,20 @@ interface AIResponse {
 }
 
 /**
- * 优先调 AI 判断类型+生成内容，失败则走本地算法兜底。
- *
- * 返回：
- *   result — 最终的结果（AI 或本地）
- *   aiAnalysis — AI 生成的内容（如果有）
- *   fromAI — 结果是否来自 AI
+ * 本地算法判定 DBTI 类型；AI 仅负责根据答题记录生成解读文案。
+ * AI 不可用时，仍展示本地类型，只是没有 AI 文案。
  */
 export async function analyzeWithAI(
   quizAnswers: QuizAnswer[],
   directorQuestions: QuizQuestion[],
+  signal?: AbortSignal,
 ): Promise<{
   result: QuizResult
   aiAnalysis: AIAnalysis | null
   fromAI: boolean
 }> {
+  const localResult = runLocal(quizAnswers)
+
   // 1. 尝试 AI
   try {
     const questionPayload = buildQuestionPayload(quizAnswers, directorQuestions)
@@ -134,50 +158,44 @@ export async function analyzeWithAI(
       body: JSON.stringify({
         questionAnswers: questionPayload,
         types: typesPayload,
+        localTypeId: localResult.typeCode,
+        localTypeName: localResult.type.name,
+        dimensionSummary: buildDimensionSummary(
+          localResult.dimensions,
+          localResult.typeCode ?? localResult.type.id,
+        ),
       }),
+      signal,
     })
 
     if (!response.ok) {
       console.warn('AI analysis unavailable, falling back to local')
-      return { result: runLocal(quizAnswers), aiAnalysis: null, fromAI: false }
+      return { result: localResult, aiAnalysis: null, fromAI: false }
     }
 
     const data = (await response.json()) as AIResponse
-    if (!data.analysis?.typeId) {
-      return { result: runLocal(quizAnswers), aiAnalysis: null, fromAI: false }
+    if (!data.analysis?.matchReason) {
+      return { result: localResult, aiAnalysis: null, fromAI: false }
     }
 
-    // 2. AI 成功 — 构造结果
+    // 2. AI 成功 — 类型始终来自本地算法，AI 只提供解读文案
     const analysis = data.analysis
-    const matchedType = DBTI_TYPES.find((t) => t.id === analysis.typeId)
-    if (!matchedType) {
-      return { result: runLocal(quizAnswers), aiAnalysis: null, fromAI: false }
-    }
-
-    const localFallback = runLocal(quizAnswers)
-
-    const aiResult: QuizResult = {
-      type: matchedType,
-      typeCode: analysis.typeId,
-      dimensions: localFallback.dimensions,
-      choiceCounts: localFallback.choiceCounts,
-      favoriteDirector: localFallback.favoriteDirector,
-      knownCount: localFallback.knownCount,
-      matchScore: Math.min(100, analysis.matchScore ?? localFallback.matchScore),
-    }
 
     const aiAnalysis: AIAnalysis = {
-      typeId: analysis.typeId,
-      matchScore: aiResult.matchScore,
+      typeId: localResult.typeCode ?? localResult.type.id,
+      matchScore: localResult.matchScore,
       matchReason: analysis.matchReason,
       roast: analysis.roast,
       recommendations: analysis.recommendations ?? [],
     }
 
-    return { result: aiResult, aiAnalysis, fromAI: true }
+    return { result: localResult, aiAnalysis, fromAI: true }
   } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw err
+    }
     console.warn('AI analysis error:', err)
-    return { result: runLocal(quizAnswers), aiAnalysis: null, fromAI: false }
+    return { result: localResult, aiAnalysis: null, fromAI: false }
   }
 }
 

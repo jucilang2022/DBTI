@@ -25,44 +25,62 @@ function buildTypesSummary(types: { id: string; name: string; tagline: string; t
 /**
  * 构建设置 prompt
  */
-function buildSystemPrompt(typesSummary: string): string {
+function buildSystemPrompt(
+  typesSummary: string,
+  localTypeId: string,
+  localTypeName: string,
+  dimensionSummary: string,
+): string {
   return `你是 DBTI（Director Based Type Indicator）的电影人格分析师。
-你的任务完全独立——根据用户的 16 道答题记录，从以下 16 种人格类型中选出最匹配的一个，并生成个性化分析。
+用户的 DBTI 类型已由本地算法根据答题统计确定，你绝对不能重新判定或推荐其他类型。
 
-注意：你不需要依赖任何外部算法结果，完全基于答题数据独立判断。
+已确定的类型：${localTypeId}（${localTypeName}）
 
-以下是 16 种 DBTI 人格类型定义：
+本地算法维度剖面（这是判定依据，你的解读必须与此一致）：
+${dimensionSummary}
+
+你的任务：基于上述已确定类型、维度剖面与用户 16 道答题记录，撰写个性化解读文案。
+- 解释为什么这些选择支撑 ${localTypeId}（要具体引用用户的选择证据）
+- 若某些单题选择「看起来」像其他类型，必须解释为：在整体维度加权统计下，仍指向 ${localTypeId}
+- 写一段毒舌但有趣的锐评
+- 推荐 5 部契合该用户口味的电影
+
+以下是 16 种 DBTI 人格类型定义（仅供理解 ${localTypeId} 的含义，不要引用其他类型编码）：
 
 ${typesSummary}
 
-分析原则：
-- 仔细分析用户每道题的选择，找出选择模式
-- 维度一 — P（大众 Commercial）vs N（特色 Niche）：用户偏向主流商业片还是小众艺术片？
-- 维度二 — C（经典 Canonical）vs G（邪典 Guilty-pleasure）：用户追随评分权威还是有自己的独立判断？
-- 维度三 — O（正统 Orthodox）vs A（独到 Alternative）：用户认同传统叙事还是偏爱实验表达？
-- 维度四 — M（核心 Cinephile）vs S（随性 Spontaneous）：用户是深度影迷还是轻松观影者？
-- 有些类型的组合很稀有（如 NGAM 需要同时特色+邪典+独到+核心），只有在数据明确支持时才选出
-- 如果用户大部分选「没看过」，选 NEWBIE 类型
-- 如果用户选择模式非常混合没有明确倾向，选最接近的类型
+维度说明：
+- P（大众）vs N（特色）
+- C（经典）vs G（邪典）
+- O（正统）vs A（独到）
+- M（核心）vs S（随性）
 
 输出格式（严格 JSON，不要 markdown 代码块，只输出纯 JSON）：
 {
-  "typeId": "PCOM / NGAM / NEWBIE 等 16 型编码",
-  "matchScore": 85,
-  "matchReason": "一段 100-150 字的分析，用中文解释为什么用户匹配这个类型，要具体引用用户的选择证据",
-  "roast": "一段 80-120 字的锐评，毒舌但有趣，像朋友间开玩笑的那种损，不要真的冒犯",
-  "recommendations": ["推荐电影1", "推荐电影2", "推荐电影3"]
+  "matchReason": "一段 150-200 字的分析，用中文解释为什么用户的答题模式符合 ${localTypeId}（${localTypeName}），要具体引用用户的选择证据",
+  "roast": "一段 120-160 字的锐评，毒舌但有趣，像朋友间开玩笑的那种损，不要真的冒犯",
+  "recommendations": ["推荐电影1", "推荐电影2", "推荐电影3", "推荐电影4", "推荐电影5"]
 }
 
-注意：roast 要中文、毒舌、一针见血。不要人身攻击。`
+硬性要求：
+- 不要输出 typeId 或 matchScore
+- matchReason 和 roast 中只能出现 ${localTypeId}，禁止出现 PCOM/NGAM/PCAM 等其他类型编码
+- 禁止写「更符合 XX 型」「其实是 XX 型」等推翻判定结果的表述
+- roast 要中文、毒舌、一针见血，不要人身攻击`
 }
 
 app.post('/api/analyze', async (req, res) => {
   try {
-    const { questionAnswers, types } = req.body
+    const { questionAnswers, types, localTypeId, localTypeName, dimensionSummary } = req.body
 
-    if (!questionAnswers || !types) {
-      res.status(400).json({ error: '缺少必要参数：questionAnswers, types' })
+    if (!questionAnswers || !types || !localTypeId) {
+      res.status(400).json({ error: '缺少必要参数：questionAnswers, types, localTypeId' })
+      return
+    }
+
+    const validIds = new Set(types.map((t: { id: string }) => t.id))
+    if (!validIds.has(localTypeId)) {
+      res.status(400).json({ error: '无效的 localTypeId', fallback: true })
       return
     }
 
@@ -82,6 +100,9 @@ ${qa.options.map((o: string, j: number) => `  ${j === qa.selected ? '→' : ' '}
     }).join('\n\n')
 
     const typesSummary = buildTypesSummary(types)
+    const typeName = localTypeName
+      ?? types.find((t: { id: string }) => t.id === localTypeId)?.name
+      ?? localTypeId
 
     const response = await fetch(`${AI_BASE_URL}/v1/chat/completions`, {
       method: 'POST',
@@ -92,8 +113,8 @@ ${qa.options.map((o: string, j: number) => `  ${j === qa.selected ? '→' : ' '}
       body: JSON.stringify({
         model: AI_MODEL,
         messages: [
-          { role: 'system', content: buildSystemPrompt(typesSummary) },
-          { role: 'user', content: `以下是用户的 16 道答题记录，请分析选择模式并输出最匹配的 DBTI 类型：\n\n${answersSummary}` },
+          { role: 'system', content: buildSystemPrompt(typesSummary, localTypeId, typeName, dimensionSummary ?? '（无剖面数据）') },
+          { role: 'user', content: `用户的 DBTI 类型已确定为 ${localTypeId}（${typeName}）。请只为这一类型撰写解读，不要提及其他类型编码。\n\n${dimensionSummary ? `维度剖面：\n${dimensionSummary}\n\n` : ''}以下是 16 道答题记录：\n\n${answersSummary}` },
         ],
         temperature: 0.7,
         max_tokens: 2000,
@@ -122,17 +143,34 @@ ${qa.options.map((o: string, j: number) => `  ${j === qa.selected ? '→' : ' '}
 
     const parsed = JSON.parse(cleaned)
 
-    // 验证 AI 返回了有效的 typeId
-    const validIds = new Set(types.map((t: { id: string }) => t.id))
-    validIds.add('NEWBIE')
-    if (!parsed.typeId || !validIds.has(parsed.typeId)) {
-      console.warn('AI returned invalid typeId:', parsed.typeId)
-      // 尝试从返回中修复或返回错误
-      res.status(502).json({ error: 'AI 返回了无效的类型编码', detail: parsed, fallback: true })
+    if (!parsed.matchReason || !parsed.roast) {
+      res.status(502).json({ error: 'AI 返回缺少必要文案字段', detail: parsed, fallback: true })
       return
     }
 
-    res.json({ success: true, analysis: parsed })
+    const otherTypePattern = /\b(P|N)(C|G)(O|A)(M|S)\b/g
+    const mentionedTypes = [...new Set(
+      `${parsed.matchReason} ${parsed.roast}`.match(otherTypePattern) ?? [],
+    )].filter((id) => id !== localTypeId)
+    if (mentionedTypes.length > 0) {
+      console.warn('AI mentioned other types:', mentionedTypes, 'expected:', localTypeId)
+      res.status(502).json({
+        error: 'AI 文案引用了其他类型编码',
+        detail: { mentionedTypes, expected: localTypeId },
+        fallback: true,
+      })
+      return
+    }
+
+    res.json({
+      success: true,
+      analysis: {
+        typeId: localTypeId,
+        matchReason: parsed.matchReason,
+        roast: parsed.roast,
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+      },
+    })
   } catch (err) {
     console.error('Server error:', err)
     res.status(500).json({ error: '服务器内部错误', detail: String(err), fallback: true })

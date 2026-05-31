@@ -4,7 +4,7 @@ import { Quiz } from '@/components/Quiz'
 import { Result } from '@/components/Result'
 import { HistoryPage } from '@/components/HistoryPage'
 import { TypeExplorer } from '@/components/TypeExplorer'
-import type { QuizResult, Director, Answer, QuizQuestion, AIAnalysis, QuizAnswer } from '@/types'
+import type { QuizResult, Director, Answer, QuizQuestion, AIAnalysis, QuizAnswer, AnswerChoice } from '@/types'
 import { Button, PageShell } from '@/components/ui/layout'
 
 type Phase = 'loading' | 'start' | 'quiz' | 'result' | 'history' | 'explore'
@@ -88,17 +88,19 @@ export default function App() {
   }
 
   const handleSelectHistoryResult = (entry: StoredResultEntry) => {
-    // 兼容处理：新格式（含 questionType）或旧格式（只有 directorId/choice）
+    const defaultOrder: AnswerChoice[] = ['famous', 'controversial', 'hidden', 'other', 'unknown']
     const convertedAnswers: QuizAnswer[] = entry.answers.map((a) => {
-      // 新格式：已经有 questionType
       if ('questionType' in a) {
         return a as unknown as QuizAnswer
       }
-      // 旧格式：转成 director_work
+      const question = entry.questions.find((q) => q.director.id === a.directorId)
+      const selectedIndex = question
+        ? question.order.indexOf(a.choice)
+        : defaultOrder.indexOf(a.choice)
       return {
         questionType: 'director_work' as const,
         questionId: a.directorId,
-        selectedIndex: 0,
+        selectedIndex: selectedIndex >= 0 ? selectedIndex : 0,
         directorId: a.directorId,
         choice: a.choice,
       }

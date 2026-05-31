@@ -74,7 +74,7 @@ export const valueQuestions: ChoiceQuestion[] = [
     options: [
       {
         text: '能聊导演风格和镜头语言。',
-        dims: { m: 1, n: 1 },
+        dims: { m: 1, o: 1 },
       },
       {
         text: '大概说得出好不好看，但聊不深。',
@@ -93,7 +93,7 @@ export const valueQuestions: ChoiceQuestion[] = [
     options: [
       {
         text: '会，每次重看都能发现新细节和新感受。',
-        dims: { m: 1, n: 1 },
+        dims: { m: 1, c: 1 },
       },
       {
         text: '很少重看，好电影一次就够了，想看新的。',
@@ -101,7 +101,7 @@ export const valueQuestions: ChoiceQuestion[] = [
       },
       {
         text: '看心情，经典片段会翻出来反复刷。',
-        dims: { p: 1, o: 1 },
+        dims: { p: 1, s: 1 },
       },
     ],
   },
@@ -158,7 +158,7 @@ export const valueQuestions: ChoiceQuestion[] = [
       },
       {
         text: '顺着喜欢导演的片表往上下游挖掘。',
-        dims: { n: 1, o: 1 },
+        dims: { n: 1, m: 1 },
       },
       {
         text: '电影节片单、蓝光发行消息和影展资讯。',
@@ -173,7 +173,7 @@ export const valueQuestions: ChoiceQuestion[] = [
     options: [
       {
         text: '非常重要，配乐决定了电影一半的情绪。',
-        dims: { m: 1, n: 1 },
+        dims: { m: 1, o: 1 },
       },
       {
         text: '不太在意，剧情和表演才是核心。',
@@ -204,7 +204,7 @@ export const valueQuestions: ChoiceQuestion[] = [
       },
       {
         text: '只对特别复杂或开放式的片子愿意二刷理清结构。',
-        dims: { o: 1, n: 1 },
+        dims: { a: 1, n: 1 },
       },
       {
         text: '经典大片会重刷，主要是为了大银幕体验。',
@@ -227,11 +227,11 @@ export const valueQuestions: ChoiceQuestion[] = [
       },
       {
         text: '在意但不会先入为主，导演也有翻车的时候。',
-        dims: { o: 1, n: 1 },
+        dims: { a: 1, n: 1 },
       },
       {
         text: '反而更爱看名导翻车，比安全牌有惊喜。',
-        dims: { g: 1, a: 1 },
+        dims: { g: 1, o: 1 },
       },
     ],
   },
@@ -242,7 +242,7 @@ export const valueQuestions: ChoiceQuestion[] = [
     options: [
       {
         text: '很重要，脱离时代去看电影容易误读。',
-        dims: { m: 1, c: 1 },
+        dims: { m: 1, o: 1 },
       },
       {
         text: '不重要，好作品应该超越时代直接打动观众。',
@@ -250,7 +250,7 @@ export const valueQuestions: ChoiceQuestion[] = [
       },
       {
         text: '看情况，有的片需要语境，有的不需要。',
-        dims: { o: 1, n: 1 },
+        dims: { a: 1, n: 1 },
       },
       {
         text: '喜欢先自己感受，再回头了解背景验证判断。',
@@ -273,11 +273,11 @@ export const valueQuestions: ChoiceQuestion[] = [
       },
       {
         text: '老老实实讲好一个故事的流畅电影。',
-        dims: { p: 1, o: 1 },
+        dims: { p: 1, s: 1 },
       },
       {
         text: '故意冒犯观众审美、让人不舒服的电影。',
-        dims: { g: 1, a: 1 },
+        dims: { g: 1, o: 1 },
       },
     ],
   },
@@ -288,7 +288,7 @@ export const valueQuestions: ChoiceQuestion[] = [
     options: [
       {
         text: '增强，了解背景能捕捉更多细节。',
-        dims: { m: 1, n: 1 },
+        dims: { m: 1, o: 1 },
       },
       {
         text: '削弱，一无所知时的第一感受最纯粹。',
@@ -311,7 +311,7 @@ export const valueQuestions: ChoiceQuestion[] = [
     options: [
       {
         text: '原著为本，改编必须尊重原文精神。',
-        dims: { o: 1, c: 1 },
+        dims: { a: 1, c: 1 },
       },
       {
         text: '好改编应该超越原著，创造独立的艺术价值。',
@@ -348,6 +348,28 @@ export const valueQuestions: ChoiceQuestion[] = [
         text: '放下它继续看下一部，想不通就不想了。',
         dims: { s: 1, o: 1 },
       },
+    ],
+  },
+  {
+    id: 'v_17',
+    type: 'value',
+    question: '你更相信哪种选片逻辑？',
+    options: [
+      { text: '热榜和大众口碑，跟着看不会大错。', dims: { p: 1, s: 1 } },
+      { text: '低分高讨论，越争议越值得亲自验证。', dims: { g: 1, o: 1 } },
+      { text: '冷门作者片，标记人数少反而更吸引我。', dims: { n: 1, m: 1 } },
+      { text: '朋友随口安利，看着玩就行不必太认真。', dims: { s: 1, g: 1 } },
+    ],
+  },
+  {
+    id: 'v_18',
+    type: 'value',
+    question: '一部片如果「不好看但很有意思」，你会？',
+    options: [
+      { text: '仍然给高分，有意思比好看更重要。', dims: { g: 1, n: 1 } },
+      { text: '给中等分，承认价值但不推荐给所有人。', dims: { o: 1, c: 1 } },
+      { text: '给低分，电影首先得让人愿意看下去。', dims: { p: 1, s: 1 } },
+      { text: '写长评辩护，这种片被误解太久了。', dims: { g: 1, m: 1 } },
     ],
   },
 ]

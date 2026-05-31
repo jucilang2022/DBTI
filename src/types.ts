@@ -128,15 +128,15 @@ export interface AIAnalysis {
 /** 分析结果 */
 export interface QuizResult {
   type: DBTIType
-  /** 四维字母编码，如 PCOM、NCAM */
+  /** 本地算法根据答题统计得出的四维字母编码（最终展示类型） */
   typeCode?: string
+  /** @deprecated 历史记录兼容字段，与 typeCode 相同 */
+  localTypeCode?: string
   /** 各维度的得分 */
   dimensions: Record<string, number>
   /** 选项分布统计 */
   choiceCounts?: Record<string, number>
-  /** 最喜欢的导演 */
-  favoriteDirector: string
-  /** 用户已认识的导演数 */
+  /** 有效回答题数（含非「没看过」的导演题及其他题型） */
   knownCount: number
   /** 匹配度评分（0-100） */
   matchScore: number

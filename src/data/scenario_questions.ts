@@ -31,7 +31,7 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     question: '一部电影看了20分钟觉得不对味你会？',
     options: [
       { text: '坚持看完，可能后面精彩。', dims: { o: 1 } },
-      { text: '果断关掉，不浪费时间。', dims: { a: 1 } },
+      { text: '果断关掉，不浪费时间。', dims: { a: 1, n: 1 } },
       { text: '快进看看后面有没有亮点再决定。', dims: { s: 1, p: 1 } },
     ],
   },
@@ -52,7 +52,7 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     options: [
       { text: '相信朋友，马上找来看。', dims: { g: 1 } },
       { text: '先问清楚好看在哪再决定。', dims: { c: 1 } },
-      { text: '偷偷查一下导演是谁再做判断。', dims: { m: 1, n: 1 } },
+      { text: '偷偷查一下导演是谁再做判断。', dims: { m: 1, p: 1 } },
     ],
   },
   {
@@ -60,7 +60,7 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     type: 'scenario',
     question: '走进电影碟店你会被什么吸引？',
     options: [
-      { text: '海报最显眼的商业大片。', dims: { p: 1 } },
+      { text: '海报最显眼的商业大片。', dims: { n: 1 } },
       { text: '角落里封面怪异的小众冷门。', dims: { n: 1 } },
       { text: '按导演名字排序的区域慢慢翻。', dims: { m: 1, c: 1 } },
     ],
@@ -70,7 +70,7 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     type: 'scenario',
     question: '看完开放式结局的电影你的反应是？',
     options: [
-      { text: '喜欢留给想象空间。', dims: { a: 1 } },
+      { text: '喜欢留给想象空间。', dims: { a: 1, n: 1 } },
       { text: '有点不爽，想知道明确结局。', dims: { o: 1 } },
       { text: '上网找解读，看看别人怎么理解的。', dims: { c: 1, m: 1 } },
     ],
@@ -81,7 +81,7 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     question: '电影节排片撞了，两部都想看你怎么选？',
     options: [
       { text: '看评分更高的那部，品质优先。', dims: { c: 1, p: 1 } },
-      { text: '看更冷门的那部，错过可能再也看不到。', dims: { n: 1, a: 1 } },
+      { text: '看更冷门的那部，错过可能再也看不到。', dims: { g: 1, n: 1 } },
       { text: '提前做好攻略，哪个导演更值得追就选哪个。', dims: { m: 1, o: 1 } },
     ],
   },
@@ -92,7 +92,7 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     options: [
       { text: '顺从对方，开心就好。', dims: { s: 1, p: 1 } },
       { text: '委婉推荐一部更好的替代。', dims: { c: 1, o: 1 } },
-      { text: '说实话，看片品味也是互相了解的过程。', dims: { g: 1, a: 1 } },
+      { text: '说实话，看片品味也是互相了解的过程。', dims: { g: 1, o: 1 } },
     ],
   },
   {
@@ -154,7 +154,7 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     options: [
       { text: '选一部公认的经典，大家都有得聊。', dims: { c: 1, p: 1 } },
       { text: '大胆推荐一部冷门神作，测试大家的接受度。', dims: { n: 1, m: 1 } },
-      { text: '选一部争议大的片子，方便展开讨论碰撞。', dims: { a: 1, g: 1 } },
+      { text: '选一部争议大的片子，方便展开讨论碰撞。', dims: { g: 1, o: 1 } },
       { text: '先看看别人推荐什么，下次再做主。', dims: { s: 1, o: 1 } },
     ],
   },
@@ -164,9 +164,9 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     question: '朋友说看不懂你最喜欢的一部电影，你会？',
     options: [
       { text: '耐心解释电影的主题和象征，希望能让他理解我的感动。', dims: { m: 1, c: 1 } },
-      { text: '理解，这片本来就不是每个人的菜。', dims: { a: 1, o: 1 } },
+      { text: '理解，这片本来就不是每个人的菜。', dims: { o: 1, n: 1 } },
       { text: '推荐另一部更容易入口但同样风格的作品。', dims: { p: 1, s: 1 } },
-      { text: '不再多解释，享受只有自己能懂的孤独感。', dims: { n: 1, g: 1 } },
+      { text: '不再多解释，享受只有自己能懂的孤独感。', dims: { g: 1, p: 1 } },
     ],
   },
   {
@@ -176,7 +176,7 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     options: [
       { text: '看完解说就当看过了，节约时间。', dims: { s: 1, p: 1 } },
       { text: '立刻关掉去找原片看，解说会毁了第一体验。', dims: { a: 1, n: 1 } },
-      { text: '看完解说后决定值不值得找原片看。', dims: { g: 1, o: 1 } },
+      { text: '看完解说后决定值不值得找原片看。', dims: { g: 1, a: 1 } },
       { text: '从来不看电影解说，那是对电影的不尊重。', dims: { m: 1, c: 1 } },
     ],
   },
@@ -186,9 +186,42 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     question: '你熬夜看完一部豆瓣8.5以上的神作却完全没有被打动，你会？',
     options: [
       { text: '怀疑自己是不是没看懂，重新看一遍找感觉。', dims: { m: 1, c: 1 } },
-      { text: '接受自己和高分片不合拍，每个人都有盲区。', dims: { a: 1, o: 1 } },
+      { text: '接受自己和高分片不合拍，每个人都有盲区。', dims: { o: 1, g: 1 } },
       { text: '给差评，不能理解为什么大家这么吹。', dims: { g: 1, p: 1 } },
       { text: '放在一边，过段时间重看也许感受不同。', dims: { n: 1, s: 1 } },
+    ],
+  },
+  {
+    id: 'sc_19',
+    type: 'scenario',
+    question: '流媒体给你推了一部「可能喜欢」但你完全没听说的片，你会？',
+    options: [
+      { text: '直接点开，算法推的一般不差。', dims: { p: 1, s: 1 } },
+      { text: '先看评分，低于7分基本不考虑。', dims: { c: 1, o: 1 } },
+      { text: '评分低反而更想点，看看有多雷。', dims: { g: 1, o: 1 } },
+      { text: '查导演和卡司，确认阵容再决定。', dims: { m: 1, n: 1 } },
+    ],
+  },
+  {
+    id: 'sc_20',
+    type: 'scenario',
+    question: '周末只有两小时，你更可能怎么安排？',
+    options: [
+      { text: '重温一部熟悉的高分经典，稳妥不出错。', dims: { c: 1, p: 1 } },
+      { text: '看一部口碑两极的新片，自己来判断。', dims: { g: 1, a: 1 } },
+      { text: '挑一部标记很少的冷门，赌一把惊喜。', dims: { n: 1, a: 1 } },
+      { text: '随便找部短的或解说版，轻松打发。', dims: { s: 1, p: 1 } },
+    ],
+  },
+  {
+    id: 'sc_21',
+    type: 'scenario',
+    question: '朋友组局看片，大家意见严重分歧，你通常？',
+    options: [
+      { text: '少数服从多数，跟着看就行。', dims: { p: 1, s: 1 } },
+      { text: '坚持己见，宁可自己另找时间看。', dims: { n: 1, g: 1 } },
+      { text: '提议折中，选一部经典老片保底。', dims: { c: 1, a: 1 } },
+      { text: '随便，看什么都行，重在社交。', dims: { s: 1, g: 1 } },
     ],
   },
 ]

@@ -22,7 +22,7 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     options: [
       { text: '分低了，大众对实验电影太苛刻。', dims: { n: 1, a: 1 } },
       { text: '分差不多了，就是少数人的菜。', dims: { o: 1 } },
-      { text: '分高了，就是部装逼片。', dims: { p: 1 } },
+      { text: '分高了，就是部装逼片。', dims: { n: 1 } },
     ],
   },
   {
@@ -32,7 +32,7 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     options: [
       { text: '觉得豆瓣越来越不靠谱了。', dims: { g: 1 } },
       { text: '理解不是所有人都能get到。', dims: { a: 1 } },
-      { text: '遗憾但不意外，它确实不够大众。', dims: { o: 1 } },
+      { text: '遗憾但不意外，它确实不够大众。', dims: { n: 1 } },
     ],
   },
   {
@@ -61,7 +61,7 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     question: '一部华语片戛纳获奖但豆瓣只有7分出头，你怎么看？',
     options: [
       { text: '国际奖项比豆瓣评分更有说服力。', dims: { n: 1, a: 1 } },
-      { text: '豆瓣分更贴合国内观众的真实感受。', dims: { p: 1, o: 1 } },
+      { text: '豆瓣分更贴合国内观众的真实感受。', dims: { p: 1, s: 1 } },
       { text: '两个维度不同，都值得参考。', dims: { c: 1, m: 1 } },
     ],
   },
@@ -72,7 +72,7 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     options: [
       { text: '公认的权威，大家都在跟我看片。', dims: { m: 1, n: 1 } },
       { text: '还行，跟得上主流话题。', dims: { p: 1, s: 1 } },
-      { text: '我的品味可能有点怪，朋友不太理解。', dims: { g: 1, a: 1 } },
+      { text: '我的品味可能有点怪，朋友不太理解。', dims: { g: 1, o: 1 } },
     ],
   },
   {
@@ -80,7 +80,7 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     type: 'self_cognition',
     question: '豆瓣评分8.5以上的文艺片和7.5左右的商业片，你会优先看哪部？',
     options: [
-      { text: '文艺片，高评分说明值得花时间。', dims: { n: 1, m: 1 } },
+      { text: '文艺片，高评分说明值得花时间。', dims: { c: 1, m: 1 } },
       { text: '商业片，娱乐体验更重要。', dims: { p: 1, g: 1 } },
       { text: '看评分结合简介，不按类型预判。', dims: { c: 1, o: 1 } },
     ],
@@ -90,9 +90,9 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     type: 'self_cognition',
     question: '一部导演之前的作品你都爱，但新作豆瓣评分跌到6分以下，你会？',
     options: [
-      { text: '依然去看，相信导演的水平。', dims: { g: 1, a: 1 } },
+      { text: '依然去看，相信导演的水平。', dims: { g: 1, o: 1 } },
       { text: '等口碑稳定了再说，不冒险。', dims: { c: 1, o: 1 } },
-      { text: '第一时间看，作为迷影必须要见证全过程。', dims: { m: 1, n: 1 } },
+      { text: '第一时间看，作为迷影必须要见证全过程。', dims: { m: 1, g: 1 } },
     ],
   },
   {
@@ -111,8 +111,8 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     type: 'self_cognition',
     question: '豆瓣上很多人给晦涩的文艺片打高分，你觉得这是？',
     options: [
-      { text: '真实的审美偏好，深度内容值得高评价。', dims: { n: 1, m: 1 } },
-      { text: '一种圈层符号，打分背后有身份焦虑。', dims: { c: 1, o: 1 } },
+      { text: '真实的审美偏好，深度内容值得高评价。', dims: { c: 1, m: 1 } },
+      { text: '一种圈层符号，打分背后有身份焦虑。', dims: { c: 1, n: 1 } },
       { text: '正常现象，任何平台都有自己的用户画像。', dims: { p: 1, s: 1 } },
       { text: '无所谓，别人打多少分关我什么事。', dims: { g: 1, a: 1 } },
     ],
@@ -123,9 +123,9 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     question: '豆瓣十分制，你觉得8分和9分的差距主要在于？',
     options: [
       { text: '工业水准和完成度的差距，差一分就是差一档。', dims: { c: 1, o: 1 } },
-      { text: '个人情感共鸣度的问题，无法客观衡量。', dims: { g: 1, a: 1 } },
+      { text: '个人情感共鸣度的问题，无法客观衡量。', dims: { g: 1, s: 1 } },
       { text: '传播度和大众认可度的差距。', dims: { p: 1, s: 1 } },
-      { text: '很难说，有的8分片比9分片更打动我。', dims: { n: 1, m: 1 } },
+      { text: '很难说，有的8分片比9分片更打动我。', dims: { g: 1, s: 1 } },
     ],
   },
   {
@@ -134,9 +134,9 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     question: '如果有人用"观影量不够"来否定你的电影品味，你？',
     options: [
       { text: '承认自己确实看得不多，但品味不需要量来证明。', dims: { s: 1, p: 1 } },
-      { text: '不服气，阅片量和审美能力没有直接关系。', dims: { g: 1, a: 1 } },
-      { text: '默默接受，然后回去补片，用行动证明。', dims: { m: 1, n: 1 } },
-      { text: '看情况，如果对方确实比我资深我认，否则免谈。', dims: { c: 1, o: 1 } },
+      { text: '不服气，阅片量和审美能力没有直接关系。', dims: { g: 1, o: 1 } },
+      { text: '默默接受，然后回去补片，用行动证明。', dims: { m: 1, o: 1 } },
+      { text: '看情况，如果对方确实比我资深我认，否则免谈。', dims: { c: 1, g: 1 } },
     ],
   },
   {
@@ -155,10 +155,21 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     type: 'self_cognition',
     question: '你更倾向于相信资深的影评人还是豆瓣普通用户的评分？',
     options: [
-      { text: '影评人，他们能从专业角度分析我不一定看出来的东西。', dims: { m: 1, n: 1 } },
+      { text: '影评人，他们能从专业角度分析我不一定看出来的东西。', dims: { m: 1, o: 1 } },
       { text: '普通用户，他们的感受更真实，不装不端。', dims: { p: 1, s: 1 } },
       { text: '都不太信，我只看自己的真实感受。', dims: { g: 1, a: 1 } },
       { text: '结合来看，影评看分析，大众看热度。', dims: { c: 1, o: 1 } },
+    ],
+  },
+  {
+    id: 'self_16',
+    type: 'self_cognition',
+    question: '如果只能保留一种观影习惯，你会选？',
+    options: [
+      { text: '追热门大片，和朋友圈保持同频。', dims: { p: 1, s: 1 } },
+      { text: '专挑低分争议片，享受独自辩护的快感。', dims: { g: 1, o: 1 } },
+      { text: '按影史经典清单系统补片，稳扎稳打。', dims: { c: 1, m: 1 } },
+      { text: '随机点开冷门片，撞大运式探索。', dims: { n: 1, a: 1 } },
     ],
   },
 ]

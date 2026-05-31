@@ -99,7 +99,7 @@ export function StartScreen({ onStart, onHistory, onExplore }: StartScreenProps)
           </motion.button>
 
           <p className="text-xs text-zinc-600">
-            约需 3 分钟 · 共 16 题，含 AI 人格解析
+            约需 2 分钟 · 共 16 题，含 AI 人格解析
           </p>
         </div>
 
@@ -126,7 +126,8 @@ export function StartScreen({ onStart, onHistory, onExplore }: StartScreenProps)
         </div>
 
         <p className="mt-6 text-[11px] leading-relaxed text-zinc-700">
-          注：数据仅保存在本地浏览器，不上传云端；结果仅供娱乐参考。
+          注：本项目仅供影迷自娱自乐，不涉及任何商业用途；<br />
+          数据仅保存在本地，不上传云端；结果仅供娱乐参考。
         </p>
       </motion.div>
     </PageShell>

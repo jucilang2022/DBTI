@@ -13,6 +13,7 @@ import { compareQuestions } from '@/data/director_compare_questions'
 import { valueQuestions } from '@/data/value-questions'
 import { scenarioQuestions } from '@/data/scenario_questions'
 import { selfCognitionQuestions } from '@/data/self_cognition_questions'
+import { FeedbackLink } from '@/components/FeedbackLink'
 import { Card, PageShell } from '@/components/ui/layout'
 import { buttonClasses } from '@/components/ui/buttonStyles'
 
@@ -23,6 +24,12 @@ interface ResultProps {
   aiAnalysis?: AIAnalysis | null
   resultId: string
   onRestart: () => void
+}
+
+/** 题型加权累加会产生浮点误差，展示时保留一位小数 */
+function formatDimScore(value: number): string {
+  const rounded = Math.round(value * 10) / 10
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
 }
 
 const CHOICE_META: Record<AnswerChoice, { label: string; icon: React.ReactNode; color: string }> = {
@@ -44,6 +51,7 @@ function getWorkByChoice(q: QuizQuestion, choice: AnswerChoice) {
 
 export function Result({ result, questions, answers, aiAnalysis, resultId, onRestart }: ResultProps) {
   const typeCode = result.typeCode?.trim().toUpperCase()
+  const typeCodeLabels = typeCode ? getDimensionLabels(typeCode) : null
   const type = (typeCode ? DBTI_TYPES.find((t) => t.id === typeCode) : null) ?? result.type
   const { knownCount, matchScore } = result
   const totalQuestions = answers.length
@@ -268,7 +276,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
           </motion.p>
 
           {/* 四维字母码 */}
-          {typeCode && (
+          {typeCode && typeCodeLabels && (
             <motion.div
               className="mt-4"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -287,15 +295,12 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
                 ))}
               </div>
               <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 mt-3">
-                {(() => {
-                  const labels = getDimensionLabels(typeCode)
-                  return labels.map((d, i) => (
-                    <div key={i} className="text-xs text-zinc-500">
-                      <span style={{ color: type.color }} className="font-mono">{d.letter}</span>
-                      {' '}{d.label}
-                    </div>
-                  ))
-                })()}
+                {typeCodeLabels.map((d, i) => (
+                  <div key={i} className="text-xs text-zinc-500">
+                    <span style={{ color: type.color }} className="font-mono">{d.letter}</span>
+                    {' '}{d.label}
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}
@@ -471,8 +476,12 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
               <>
                 <div className="flex items-center gap-2 mb-4 pt-2">
                   <Sparkles className="w-4 h-4 text-zinc-400" />
-                  <span className="text-sm font-semibold text-white">四维人格剖面</span>
+                  <span className="text-sm font-semibold text-white">四维答题倾向</span>
                 </div>
+                <p className="text-xs text-zinc-500 mb-4 leading-relaxed">
+                  根据你的各题选择统计得出，反映你在四个维度上的倾向分布。
+                  {aiAnalysis && ' AI 解读文案基于同一类型与答题记录生成。'}
+                </p>
                 <div className="space-y-3">
                   {pairs.map((pair, i) => {
                     const total = pair.lv + pair.rv
@@ -482,7 +491,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
                       <div key={i}>
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span style={{ color: pair.lc }} className="font-semibold">{pair.left}</span>
-                          <span className="text-zinc-600">{pair.lv} vs {pair.rv}</span>
+                          <span className="text-zinc-600">{formatDimScore(pair.lv)} vs {formatDimScore(pair.rv)}</span>
                           <span style={{ color: pair.rc }} className="font-semibold">{pair.right}</span>
                         </div>
                         <div className="flex h-2 rounded-full overflow-hidden bg-zinc-800">
@@ -592,17 +601,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
             </button>
           </div>
 
-          <p className="text-right text-xs text-zinc-600">
-            建议/反馈？-&gt;{' '}
-            <a
-              href="https://www.douban.com/people/230674291"
-              target="_blank"
-              rel="noreferrer"
-              className="text-zinc-400 underline-offset-4 hover:text-zinc-200 hover:underline"
-            >
-              月亮
-            </a>
-          </p>
+          <FeedbackLink className="mt-5" />
         </motion.div>
       </div>
 

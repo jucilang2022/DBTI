@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Film, Brain } from 'lucide-react'
 import type { Director, AnswerChoice, QuizQuestion, AIAnalysis, QuizAnswer } from '@/types'
@@ -36,6 +36,11 @@ type QuizItem =
   | { kind: 'scenario'; question: typeof allScenarioQuestions[number] }
   | { kind: 'self_cognition'; question: typeof allSelfCognitionQuestions[number] }
 
+interface AnalysisPayload {
+  answers: QuizAnswer[]
+  questions: QuizQuestion[]
+}
+
 const ANALYZING_PHRASES = [
   '品味校准中...',
   '分析你的电影DNA...',
@@ -48,9 +53,7 @@ const ANALYZING_PHRASES = [
 export function Quiz({ directors, onBack, onComplete }: QuizProps) {
   /* ---- 创建混合题目列表 ---- */
   const items = useMemo(() => {
-    // 4 道导演作品题
-    const pickedDirectors = pickRandom(directors, DIRECTOR_WORK_COUNT)
-    const directorItems: QuizItem[] = pickedDirectors.map((director) => {
+    const directorItems: QuizItem[] = pickRandom(directors, DIRECTOR_WORK_COUNT).map((director) => {
       const order: AnswerChoice[] = [
         ...shuffle<AnswerChoice>(['famous', 'controversial', 'hidden']),
         'other',
@@ -59,45 +62,35 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
       return { kind: 'director_work' as const, director, order }
     })
 
-    // 2 道导演对比题
     const compareItems: QuizItem[] = pickRandom(allCompareQuestions, DIRECTOR_COMPARE_COUNT).map((q) => ({
       kind: 'director_compare' as const,
       question: q,
     }))
 
-    // 3 道价值观题（从4道中随机选3）
     const valueItems: QuizItem[] = pickRandom(allValueQuestions, VALUE_COUNT).map((q) => ({
       kind: 'value' as const,
       question: q,
     }))
 
-    // 4 道情景题（从7道中随机选4）
     const scenarioItems: QuizItem[] = pickRandom(allScenarioQuestions, SCENARIO_COUNT).map((q) => ({
       kind: 'scenario' as const,
       question: q,
     }))
 
-    // 3 道自我认知题（从5道中随机选3）
     const selfItems: QuizItem[] = pickRandom(allSelfCognitionQuestions, SELF_COUNT).map((q) => ({
       kind: 'self_cognition' as const,
       question: q,
     }))
 
-    // 合并除第一题外的所有题，打乱
-    const rest = shuffle([
-      ...directorItems.slice(1),
+    return shuffle([
+      ...directorItems,
       ...compareItems,
       ...valueItems,
       ...scenarioItems,
       ...selfItems,
     ])
+  }, [directors])
 
-    // 第一题用导演题或价值观题
-    const firstItem = directorItems[0]
-    return [firstItem, ...rest]
-  }, [])
-
-  // 从 items 中提取 questions（导演作品题，给 onComplete 用）
   const questions = useMemo(() => {
     return items
       .filter((item): item is QuizItem & { kind: 'director_work' } => item.kind === 'director_work')
@@ -106,13 +99,24 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<QuizAnswer[]>([])
+  const [analysisPayload, setAnalysisPayload] = useState<AnalysisPayload | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisPhase, setAnalysisPhase] = useState<'loading' | 'ai' | 'done'>('loading')
   const [phraseIndex, setPhraseIndex] = useState(0)
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
 
   const currentItem = items[currentIndex]
 
-  /* ---- 通用答题处理 ---- */
+  const handleBack = () => {
+    if (quizAnswers.length === 0) {
+      onBack()
+      return
+    }
+    const confirmed = window.confirm('确定返回首页吗？当前答题进度将不会保存。')
+    if (confirmed) onBack()
+  }
+
   const handleSelect = useCallback(
     (selectedIndex: number) => {
       if (!currentItem) return
@@ -121,7 +125,6 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
 
       switch (currentItem.kind) {
         case 'director_work': {
-          // selectedIndex maps to order array for director_work
           const choice = currentItem.order[selectedIndex]
           newAnswer = {
             questionType: 'director_work',
@@ -141,18 +144,19 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
       }
 
       const newAnswers = [...quizAnswers, newAnswer]
-      setQuizAnswers(newAnswers)
 
       if (newAnswers.length >= TOTAL_QUESTIONS) {
+        setQuizAnswers(newAnswers)
+        setAnalysisPayload({ answers: newAnswers, questions })
         setIsAnalyzing(true)
       } else {
+        setQuizAnswers(newAnswers)
         setCurrentIndex((i) => i + 1)
       }
     },
-    [currentItem, quizAnswers],
+    [currentItem, quizAnswers, questions],
   )
 
-  /* ---- 兼容 QuestionCard 的回调 ---- */
   const handleDirectorChoice = useCallback(
     (choice: AnswerChoice) => {
       if (currentItem?.kind !== 'director_work') return
@@ -163,11 +167,13 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
     [currentItem, handleSelect],
   )
 
-  /* ---- 分析阶段动画 ---- */
   useEffect(() => {
-    if (!isAnalyzing) return
+    if (!analysisPayload) return
 
-    const timer = setInterval(() => {
+    let cancelled = false
+    const abortController = new AbortController()
+
+    const phraseTimer = setInterval(() => {
       setPhraseIndex((i) => {
         if (analysisPhase === 'ai' && i < 4) return 4
         if (analysisPhase === 'loading' && i >= 4) return 0
@@ -175,38 +181,52 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
       })
     }, 600)
 
-    setTimeout(async () => {
+    let maxWaitTimer: ReturnType<typeof window.setTimeout> | undefined
+
+    const startTimer = window.setTimeout(async () => {
+      if (cancelled) return
       setAnalysisPhase('ai')
 
-      // 给 AI 最多 12 秒超时保护
-      const timeoutId = setTimeout(() => {
-        setAnalysisPhase('done')
+      maxWaitTimer = window.setTimeout(() => {
+        if (!cancelled) setAnalysisPhase('done')
       }, 12000)
 
-      const { result, aiAnalysis } = await analyzeWithAI(
-        quizAnswers,
-        questions,
-      )
+      try {
+        const { result, aiAnalysis } = await analyzeWithAI(
+          analysisPayload.answers,
+          analysisPayload.questions,
+          abortController.signal,
+        )
 
-      clearTimeout(timeoutId)
+        if (cancelled) return
 
-      setAnalysisPhase('done')
-      setTimeout(() => {
-        onComplete(result, questions, quizAnswers, aiAnalysis)
-      }, 300)
+        window.clearTimeout(maxWaitTimer)
+        setAnalysisPhase('done')
+
+        window.setTimeout(() => {
+          if (!cancelled) {
+            onCompleteRef.current(result, analysisPayload.questions, analysisPayload.answers, aiAnalysis)
+          }
+        }, 300)
+      } catch {
+        // AbortError — effect 已 cleanup，忽略即可
+      }
     }, 800)
 
     return () => {
-      clearInterval(timer)
+      cancelled = true
+      abortController.abort()
+      clearInterval(phraseTimer)
+      window.clearTimeout(startTimer)
+      if (maxWaitTimer) window.clearTimeout(maxWaitTimer)
     }
-  }, [isAnalyzing]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [analysisPayload])
 
-  /* ---- 答题阶段 ---- */
   if (!isAnalyzing && currentItem) {
     return (
       <PageShell contentClassName="pt-8 pb-14 sm:pt-12">
         <button
-          onClick={onBack}
+          onClick={handleBack}
           className="mb-6 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-zinc-500 transition-colors hover:text-white"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -263,7 +283,6 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
     )
   }
 
-  /* ---- 分析加载页 ---- */
   const showAIBadge = analysisPhase === 'ai' || analysisPhase === 'done'
 
   return (

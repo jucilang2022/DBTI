@@ -24,7 +24,7 @@ export function ScenarioCard({
   totalQuestions,
   onSelect,
 }: ScenarioCardProps) {
-  const progress = ((questionIndex + 1) / totalQuestions) * 100
+  const progress = (questionIndex / totalQuestions) * 100
 
   return (
     <motion.div
@@ -75,12 +75,12 @@ export function ScenarioCard({
             key={idx}
             onClick={() => onSelect(idx)}
             className={cn(
-              'w-full text-left px-5 py-4 rounded-2xl border-2 shadow-lg shadow-black/10 transition-all duration-200 group',
+              'w-full text-left px-5 py-4 rounded-2xl border-2 shadow-lg shadow-black/10 transition-colors duration-200 group',
               OPTION_STYLES[idx % OPTION_STYLES.length],
             )}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
+            transition={{ delay: idx * 0.06, type: 'tween', duration: 0.22, ease: 'easeOut' }}
             whileHover={{ x: 4 }}
             whileTap={{ scale: 0.98 }}
           >

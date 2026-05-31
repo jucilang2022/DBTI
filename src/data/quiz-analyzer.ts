@@ -1,14 +1,30 @@
 import type { QuizAnswer, ChoiceQuestion, DirectorCompareQuestion, QuizResult } from '@/types'
 import { DBTI_TYPES } from './dbti-types'
 
+type DimKey = 'p' | 'n' | 'c' | 'g' | 'o' | 'a' | 'm' | 's'
+type DimMap = Record<DimKey, number>
+
+const EMPTY_DIMS = (): DimMap => ({ p: 0, n: 0, c: 0, g: 0, o: 0, a: 0, m: 0, s: 0 })
+
 /**
- * DBTI 分析引擎 v4 — 归一化清晰度 + 合理分档。
+ * 题型权重：行为题（价值观/情景/自我认知）对最终类型判定影响更大，
+ * 导演作品题降权以避免「选 4 次代表作 → 锁死 PCOM」的堆叠效应。
+ */
+export const QUESTION_TYPE_WEIGHTS: Record<QuizAnswer['questionType'], number> = {
+  director_work: 0.5,
+  director_compare: 1.1,
+  value: 1.45,
+  scenario: 1.4,
+  self_cognition: 1.4,
+}
+
+/**
+ * DBTI 分析引擎 v5 — 题型加权 + 归一化维度匹配。
  *
- * 核心改进：
- *   1. 清晰度按「实际有机会被测量的次数」归一化，而非总题数
- *      避免 M/S 维度数据少导致整体分被拖低
- *   2. matchScore 上限 100，分档更直观（60=过得去, 80=清晰, 90=非常清晰）
- *   3. 交叉验证沿用，但归一化计算让分数更合理
+ * 1. 各题型按权重累加维度分，行为题话语权高于导演作品题
+ * 2. 类型判定：对 16 型逐一计算「归一化维度契合度」，取得分最高者
+ *    （每维贡献 -1~+1，避免 C/A 信号因题量堆叠而碾压 G/O）
+ * 3. matchScore 仍基于清晰度 / 覆盖率 / 一致性
  */
 export function analyzeQuiz(
   answers: QuizAnswer[],
@@ -17,24 +33,18 @@ export function analyzeQuiz(
   scenarioQuestions: ChoiceQuestion[],
   selfCognitionQuestions: ChoiceQuestion[],
 ): QuizResult {
-  /* ---- 1. 初始化 ---- */
-  const dims = { p: 0, n: 0, c: 0, g: 0, o: 0, a: 0, m: 0, s: 0 }
-  // 记录每个维度最大可能被激活的次数（用于归一化）
-  const maxPerDim = { p: 0, n: 0, c: 0, g: 0, o: 0, a: 0, m: 0, s: 0 }
-  // 分题型维度（用于交叉验证）
-  const dirDims = { p: 0, n: 0, c: 0, g: 0, o: 0, a: 0 }
-  const behDims = { p: 0, n: 0, c: 0, g: 0, o: 0, a: 0, m: 0, s: 0 }
+  const dims = EMPTY_DIMS()
+  const maxPerDim = EMPTY_DIMS()
+  const dirDims = EMPTY_DIMS()
+  const behDims = EMPTY_DIMS()
 
   let knownCount = 0
-  let lastKnownName = ''
   const choiceCounts: Record<string, number> = {
     famous: 0, controversial: 0, hidden: 0, other: 0, unknown: 0,
   }
 
-  /* ---- 2. 处理各题型 ---- */
   for (const answer of answers) {
     switch (answer.questionType) {
-      /* ======== 导演作品题 ======== */
       case 'director_work': {
         const c = answer.choice
         if (!c || c === 'unknown') {
@@ -44,47 +54,31 @@ export function analyzeQuiz(
         knownCount++
         choiceCounts[c] = (choiceCounts[c] ?? 0) + 1
 
-        switch (c) {
-          case 'famous':
-            dims.p += 1; dirDims.p += 1; maxPerDim.p += 1
-            dims.c += 1; dirDims.c += 1; maxPerDim.c += 1
-            dims.o += 1; dirDims.o += 1; maxPerDim.o += 1
-            break
-          case 'hidden':
-            dims.n += 1; dirDims.n += 1; maxPerDim.n += 1
-            dims.c += 1; dirDims.c += 1; maxPerDim.c += 1
-            dims.a += 1; dirDims.a += 1; maxPerDim.a += 1
-            break
-          case 'controversial':
-            dims.g += 1; dirDims.g += 1; maxPerDim.g += 1
-            dims.a += 1; dirDims.a += 1; maxPerDim.a += 1
-            break
-          case 'other':
-            dims.a += 1; dirDims.a += 1; maxPerDim.a += 1
-            break
-        }
+        const w = QUESTION_TYPE_WEIGHTS.director_work
+        const delta: Partial<DimMap> =
+          c === 'famous' ? { p: 0.85, o: 0.8, c: 0.7 }
+          : c === 'hidden' ? { n: 1, c: 0.65, a: 0.9 }
+          : c === 'controversial' ? { g: 1, a: 0.55, p: 0.4 }
+          : { a: 0.85, p: 0.3 }
+
+        applyDimDelta(dims, delta, w, maxPerDim)
+        applyDimDelta(dirDims, delta, w)
         break
       }
 
-      /* ======== 导演对比题 ======== */
       case 'director_compare': {
         const q = compareQuestions.find((cq) => cq.id === answer.questionId)
         if (!q) continue
         knownCount++
         const sel = q.directors[answer.selectedIndex]
         if (sel) {
-          for (const [dim, val] of Object.entries(sel.dims)) {
-            const key = dim as keyof typeof dims
-            if (key in dims) {
-              dims[key] += val; maxPerDim[key] += val
-            }
-            if (key in behDims) behDims[key] += val
-          }
+          const w = QUESTION_TYPE_WEIGHTS.director_compare
+          applyDimDelta(dims, sel.dims, w, maxPerDim)
+          applyDimDelta(behDims, sel.dims, w)
         }
         break
       }
 
-      /* ======== 价值观/情景/自我认知 ======== */
       case 'value':
       case 'scenario':
       case 'self_cognition': {
@@ -96,80 +90,41 @@ export function analyzeQuiz(
         knownCount++
         const opt = q.options[answer.selectedIndex]
         if (opt) {
-          for (const [dim, val] of Object.entries(opt.dims)) {
-            const key = dim as keyof typeof dims
-            if (key in dims) {
-              dims[key] += val; maxPerDim[key] += val
-            }
-            if (key in behDims) behDims[key] += val
-          }
+          const w = QUESTION_TYPE_WEIGHTS[answer.questionType]
+          applyDimDelta(dims, opt.dims, w, maxPerDim)
+          applyDimDelta(behDims, opt.dims, w)
         }
         break
       }
     }
   }
 
-  /* ---- 3. 交叉验证：导演题 vs 行为题 ---- */
-  const dirCode = computeTypeCode(dirDims)
-  const behCode = computeTypeCode(behDims)
+  const dirCode = deriveTypeCode(dirDims)
+  const behCode = deriveTypeCode(behDims)
 
-  // 如果某维度的dir数据或beh数据为零，该维度不计入一致性
   let agreementCount = 0
   let validDimCount = 0
   for (let i = 0; i < 4; i++) {
-    // 检查该维度在两边都有数据
-    const dirSide = dirCode[i]
-    const behSide = behCode[i]
-    if (dirSide === '-' || behSide === '-') continue
-    if (dirSide === behSide) agreementCount++
+    if (dirCode[i] === '-' || behCode[i] === '-') continue
+    if (dirCode[i] === behCode[i]) agreementCount++
     validDimCount++
   }
   const agreementRatio = validDimCount > 0 ? agreementCount / validDimCount : 0.75
 
-  /* ---- 4. 计算类型编码（含边界情况） ---- */
-  const overallCode = computeTypeCode(dims)
+  const { type: matchedType, typeCode: overallCode } = matchBestType(dims, behDims)
 
-  // 全选 unknown 或几乎没数据 → 影坛白纸
-  if (knownCount === 0) {
-    const newbieType = DBTI_TYPES.find((t) => t.id === 'NEWBIE') ?? DBTI_TYPES[0]
-    return {
-      type: newbieType,
-      typeCode: '----',
-      dimensions: { ...dims },
-      choiceCounts,
-      favoriteDirector: '未知',
-      knownCount: 0,
-      matchScore: 20,
-    }
-  }
-
-  const matchedType = DBTI_TYPES.find((t) => t.id === overallCode) ?? DBTI_TYPES[0]
-
-  /* ---- 5. 归一化清晰度 ---- */
-  const pairs: [string, string][] = [['p','n'], ['c','g'], ['o','a'], ['m','s']]
+  const pairs: [DimKey, DimKey][] = [['p', 'n'], ['c', 'g'], ['o', 'a'], ['m', 's']]
   const normalizedClarity = pairs.map(([a, b]) => {
-    const total = (maxPerDim[a as keyof typeof maxPerDim] ?? 0) + (maxPerDim[b as keyof typeof maxPerDim] ?? 0)
-    if (total === 0) return 0.5  // 没有数据 → 中性（不贡献也不惩罚）
-    const diff = Math.abs((dims[a as keyof typeof dims] ?? 0) - (dims[b as keyof typeof dims] ?? 0))
-    return diff / total  // 0~1, 1=完全偏向一边
+    const total = (maxPerDim[a] ?? 0) + (maxPerDim[b] ?? 0)
+    if (total === 0) return 0.5
+    const diff = Math.abs((dims[a] ?? 0) - (dims[b] ?? 0))
+    return diff / total
   })
   const avgClarity = normalizedClarity.reduce((a, b) => a + b, 0) / 4
 
-  /* ---- 6. 匹配度评分 ---- */
-  // ----- 清晰度分（0-50) -----
-  // 用 avgClarity × 70 + 15 做映射，确保合理基线：
-  //   avgClarity ≈ 5%  (混合型) → 19 分
-  //   avgClarity ≈ 25% (中等清晰) → 33 分
-  //   avgClarity ≈ 40% (清晰) → 43 分
-  //   avgClarity ≈ 60% (极清晰) → 50 分（封顶）
   const clarityScore = Math.min(50, Math.round(avgClarity * 70 + 15))
-
-  // ----- 覆盖率分（0-25）-----
   const coverageScore = Math.min(25, Math.round((knownCount / Math.max(answers.length, 1)) * 25))
-
-  // ----- 一致性分（0-25）-----
   const consistencyScore = Math.round(agreementRatio * 25)
-
   const matchScore = Math.min(100, clarityScore + coverageScore + consistencyScore)
 
   return {
@@ -177,24 +132,105 @@ export function analyzeQuiz(
     typeCode: overallCode,
     dimensions: { ...dims },
     choiceCounts,
-    favoriteDirector: lastKnownName || '未知',
     knownCount,
     matchScore,
   }
 }
 
-/** 根据维度分数计算 4 位编码 */
-function computeTypeCode(dims: Record<string, number>): string {
-  const hasP = (dims.p ?? 0) !== 0 || (dims.n ?? 0) !== 0
-  const hasC = (dims.c ?? 0) !== 0 || (dims.g ?? 0) !== 0
-  const hasO = (dims.o ?? 0) !== 0 || (dims.a ?? 0) !== 0
-  const hasM = (dims.m ?? 0) !== 0 || (dims.s ?? 0) !== 0
+function applyDimDelta(
+  target: DimMap,
+  delta: Record<string, number>,
+  weight: number,
+  maxTarget?: DimMap,
+) {
+  for (const [key, val] of Object.entries(delta)) {
+    if (!(key in target)) continue
+    const k = key as DimKey
+    const weighted = val * weight
+    target[k] += weighted
+    if (maxTarget) {
+      maxTarget[k] += Math.abs(val) * weight
+    }
+  }
+}
 
-  const d1 = hasP ? ((dims.p ?? 0) >= (dims.n ?? 0) ? 'P' : 'N') : '-'
-  const d2 = hasC ? ((dims.c ?? 0) >= (dims.g ?? 0) ? 'C' : 'G') : '-'
-  const d3 = hasO ? ((dims.o ?? 0) >= (dims.a ?? 0) ? 'O' : 'A') : '-'
-  const d4 = hasM ? ((dims.m ?? 0) > (dims.s ?? 0) ? 'M' : 'S') : '-'
+/** 单维归一化差值：[-1, 1]，无数据时为 0 */
+function normalizedMargin(pos: number, neg: number): number {
+  const total = pos + neg
+  if (total <= 0) return 0
+  return (pos - neg) / total
+}
+
+/**
+ * 计算某类型与当前维度剖面的契合度。
+ * 优先采用行为题（12 题）在各维上的归一化差值；行为题无信号时回退到全量加权分。
+ */
+export function scoreTypeAlignment(
+  dims: DimMap,
+  typeId: string,
+  behDims?: DimMap,
+): number {
+  const axes: [DimKey, DimKey, string][] = [
+    ['p', 'n', typeId[0]],
+    ['c', 'g', typeId[1]],
+    ['o', 'a', typeId[2]],
+    ['m', 's', typeId[3]],
+  ]
+
+  let sum = 0
+  let wins = 0
+  for (const [posKey, negKey, letter] of axes) {
+    const margin = axisMargin(dims, behDims, posKey, negKey)
+    const aligned = letter === posKey.toUpperCase() ? margin : -margin
+    sum += aligned
+    if (aligned > 0) wins++
+  }
+
+  return sum + wins * 0.001
+}
+
+function axisMargin(full: DimMap, beh: DimMap | undefined, posKey: DimKey, negKey: DimKey): number {
+  if (beh) {
+    const behTotal = (beh[posKey] ?? 0) + (beh[negKey] ?? 0)
+    if (behTotal > 0) {
+      return normalizedMargin(beh[posKey] ?? 0, beh[negKey] ?? 0)
+    }
+  }
+  return normalizedMargin(full[posKey] ?? 0, full[negKey] ?? 0)
+}
+
+/** 从加权维度分中匹配最佳 16 型（类型判定以行为题为主） */
+export function matchBestType(
+  dims: DimMap,
+  behDims?: DimMap,
+): { type: (typeof DBTI_TYPES)[number]; typeCode: string } {
+  let bestType = DBTI_TYPES[0]
+  let bestScore = -Infinity
+
+  for (const type of DBTI_TYPES) {
+    const score = scoreTypeAlignment(dims, type.id, behDims)
+    if (score > bestScore) {
+      bestScore = score
+      bestType = type
+    }
+  }
+
+  return { type: bestType, typeCode: bestType.id }
+}
+
+/** 根据维度分数推导 4 位编码（用于交叉验证、剖面展示） */
+export function deriveTypeCode(dims: DimMap | Record<string, number>): string {
+  const d = dims as DimMap
+  const d1 = pickLetter(d.p, d.n, 'P', 'N')
+  const d2 = pickLetter(d.c, d.g, 'C', 'G')
+  const d3 = pickLetter(d.o, d.a, 'O', 'A')
+  const d4 = pickLetter(d.m, d.s, 'M', 'S')
   return `${d1}${d2}${d3}${d4}`
+}
+
+function pickLetter(pos: number, neg: number, posLetter: string, negLetter: string): string {
+  if (pos === 0 && neg === 0) return '-'
+  return pos >= neg ? posLetter : negLetter
 }
 
 export function getRarityLabel(rarity: string): string {

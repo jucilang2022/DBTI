@@ -209,7 +209,7 @@ export function HistoryPage({ onBack, onSelectResult }: HistoryPageProps) {
                           {entry.typeName}
                         </div>
                         <div className="text-xs text-zinc-500 mt-1">
-                          {dateStr} · 认识 {entry.knownCount}/10 位
+                          {dateStr} · 有效回答 {entry.knownCount}/16 题
                         </div>
                       </div>
                     </div>

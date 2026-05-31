@@ -2,15 +2,17 @@
 
 > **D**irector **B**ased **T**ype **I**ndicator
 
-10 道题，找到你的导演人格。从张艺谋到诺兰，从库布里克到是枝裕和——每一道题都在揭示你的电影品味 DNA。
+16 道题，找到你的导演人格。涵盖导演作品、导演对比、价值观、情景与自我认知五种题型，本地算法判定类型，AI 根据答题记录生成解读文案。
 
 ## ✨ 功能
 
 - **55 位中外导演**：华语、日本、欧美、欧洲及亚洲艺术导演全覆盖
-- **16 型 DBTI 人格**：通过 vibe 标签匹配算法，从银幕诗人到纯粹迷影
-- **智能分析**：品味光谱条形图、人格解析、精神导演推荐
+- **16 型 DBTI 人格**：四维字母编码（P/N · C/G · O/A · M/S），如 PCOM、NGAM
+- **混合题型答题**：每次测试随机抽取 16 题（4 导演作品 + 2 导演对比 + 3 价值观 + 4 情景 + 3 自我认知），顺序完全随机
+- **本地算法 + AI 文案**：本地算法根据答题统计判定最终 DBTI 类型；AI 基于同一类型与答题记录生成锐评、解读与片单推荐
+- **智能分析**：答题倾向条形图、人格解析、精神导演推荐
 - **答题回顾**：完成后可查看每道题的选择
-- **分享卡片**：Canvas 生成精美结果图，支持下载
+- **分享卡片**：Canvas 生成结果图，支持下载
 - **历史记录**：自动保存过往测试结果，支持查看统计分布
 - **全人格探索**：浏览 16 种 DBTI 人格的详细介绍
 
@@ -20,14 +22,26 @@
 - **Vite** 构建
 - **Tailwind CSS v4** 样式
 - **Framer Motion** 动效
+- **Express** AI 分析后端（DeepSeek API）
 - **Canvas** 分享卡片渲染
 
 ## 🚀 快速开始
 
 ```bash
 npm install
-npm run dev
 ```
+
+本地开发（前端 + AI 后端）：
+
+```bash
+# 终端 1：前端
+npm run dev
+
+# 终端 2：AI 后端（需配置 .env 中的 API Key）
+npm run dev:server
+```
+
+前端默认运行在 `http://localhost:5173`，AI 后端运行在 `http://localhost:3099`，开发模式下 Vite 会自动代理 `/api` 请求。
 
 构建生产版本：
 
@@ -39,44 +53,56 @@ npm run build
 
 ```
 src/
+├── api/
+│   └── analyze.ts          # AI 分析请求 + 本地兜底
 ├── data/
-│   ├── directors.ts      # 55位导演数据库
-│   ├── dbti-types.ts     # 12型 DBTI 人格
-│   └── quiz-analyzer.ts  # 分析引擎
+│   ├── directors.ts        # 55 位导演数据库
+│   ├── dbti-types.ts       # 16 型 DBTI 人格
+│   ├── quiz-analyzer.ts    # 本地维度分析引擎
+│   ├── value-questions.ts  # 价值观题
+│   ├── director_compare_questions.ts
+│   ├── scenario_questions.ts
+│   └── self_cognition_questions.ts
 ├── components/
-│   ├── StartScreen.tsx   # 首页
-│   ├── Quiz.tsx          # 答题流程
-│   ├── QuestionCard.tsx  # 题目卡片
-│   ├── Result.tsx        # 结果页
-│   ├── TasteBar.tsx      # 品味光谱
-│   ├── ShareCard.tsx     # 分享卡片
-│   ├── DirectorDetail.tsx # 导演详情
-│   ├── HistoryPage.tsx   # 历史记录
-│   └── TypeExplorer.tsx  # 人格全览
-├── lib/
-│   └── utils.ts
-├── types.ts
-├── App.tsx
-└── main.tsx
+│   ├── StartScreen.tsx     # 首页
+│   ├── Quiz.tsx            # 答题流程
+│   ├── Result.tsx          # 结果页
+│   ├── ShareCard.tsx       # 分享卡片
+│   ├── HistoryPage.tsx     # 历史记录
+│   └── TypeExplorer.tsx    # 人格全览
+server/
+└── index.ts                # AI 分析 API 服务
 ```
 
-## 🧑‍🎨 DBTI 12 型
+## 🧠 分析逻辑
 
-| 类型 | 英文名 | 核心标签 |
-|------|--------|----------|
-| 银幕诗人 | Screen Poet | 诗意、唯美、文艺 |
-| 叙事工匠 | Story Craftsman | 叙事、结构、情节 |
-| 视觉猎手 | Visual Hunter | 视觉、镜头、构图 |
-| 现实之眼 | Eye of Reality | 现实、社会、记录 |
-| 商业巨匠 | Blockbuster Maestro | 商业、大众、类型 |
-| 冷门猎手 | Rarity Hunter | 特色、冷门、遗珠 |
-| 古典传承 | Classic Heir | 古典、传统、大师 |
-| 反叛先锋 | Rebel Vanguard | 反叛、突破、颠覆 |
-| 荒诞行者 | Absurd Walker | 荒诞、黑色、讽刺 |
-| 情感捕手 | Emotion Catcher | 情感、温情、共鸣 |
-| 类型通吃 | Genre Master | 动作、娱乐、类型 |
-| 纯粹迷影 | Pure Cinephile | 大师、多元、突破 |
+- **最终人格类型**：由本地算法 v5 根据 16 题答题统计判定（题型加权 + 归一化维度匹配）
+- **AI 职责**：接收本地判定的类型与完整答题记录，生成 matchReason / roast / recommendations 文案；AI 不可用时仍展示本地类型，只是没有 AI 文案
+- **本地算法 v5**：
+  - 各题型按权重累加维度分（价值观/情景/自我认知 1.35–1.4，导演对比 1.15，导演作品 0.55）
+  - **类型判定以 12 道行为题为主**，导演作品题主要影响剖面图与覆盖率
+  - 对 16 型计算归一化契合度（每维 -1~+1），取得分最高者，避免单维堆叠锁死某一型
+- **四维答题倾向**：始终由全量加权分统计，展示为条形图
+- 四维答题倾向条形图与最终类型均来自同一本地算法结果
+
+本地模拟（5 万次随机答题）下，16 型出现率约在 **3.4%–9.2%** 之间（均匀理想值为 6.25%），最高/最低比约 **2.5×–2.7×**，四维边际比例均接近 50/50。运行 `npm run simulate` 可复现。
+
+## 🧑‍🎨 DBTI 16 型
+
+人格类型以四维字母编码命名，例如：
+
+| 编码 | 名称 | 维度含义 |
+|------|------|----------|
+| PCOM | 奥斯卡风向标 | 大众 · 经典 · 正统 · 核心影迷 |
+| NGAM | B级片挖掘机 | 特色 · 争议 · 独到 · 核心影迷 |
+
+完整 16 型可在应用内「全部人格」页面浏览。
 
 ## 📸 截图
 
 （运行 `npm run dev` 后本地查看）
+
+## 🔜 待优化
+
+- 分享卡片：展示更多结果页关键信息
+- 部署说明：生产环境前后端部署脚本
