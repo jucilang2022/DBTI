@@ -84,27 +84,18 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
   }, [type, matchScore, knownCount, resultId, result, questions, answers, aiAnalysis])
 
   const renderShareText = () => {
-    const choiceEmojis = result.choiceCounts
-      ? Object.entries(result.choiceCounts).map(([k, v]) =>
-          k === 'famous' ? '⭐'.repeat(v as number) :
-          k === 'controversial' ? '🔥'.repeat(v as number) :
-          k === 'hidden' ? '💎'.repeat(v as number) :
-          k === 'other' ? '🎬'.repeat(v as number) :
-          '❓'.repeat(v as number)
-        ).join('')
-      : ''
     const lines = [
-      '🎬 DBTI 导演人格测试结果',
+      '🎬 DBTI · 电影人格测试结果',
       '',
-      `🧑‍🎨 你的类型：${type.name}（${type.nameEn}）`,
+      `🧑‍🎨 类型：${type.name}（${type.nameEn}）`,
       `📝 「${type.tagline}」`,
-      `🎯 匹配度：${matchScore}%`,
-      `🎭 有效回答 ${knownCount}/${totalQuestions} 题`,
-      choiceEmojis ? `📊 ${choiceEmojis}` : '',
+      `🎯 置信度：${matchScore}%`,
+      `🎭 有效回答：${knownCount}/${totalQuestions}`,
+      aiAnalysis?.matchReason ? `💬 ${aiAnalysis.matchReason.slice(0, 80)}` : '',
       '',
       `✨ 精神导演：${type.spiritDirector}`,
       '',
-      '来测测你的导演人格 👇',
+      '🔗 来测测你的电影人格 👇',
       window.location.href,
     ]
     return lines.filter(Boolean).join('\n')
@@ -613,6 +604,9 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
         matchScore={matchScore}
         knownCount={knownCount}
         totalQuestions={totalQuestions}
+        dimensions={result.dimensions}
+        matchReason={aiAnalysis?.matchReason}
+        spiritDirector={type.spiritDirector}
       />
     </PageShell>
   )
