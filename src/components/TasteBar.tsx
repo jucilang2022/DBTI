@@ -40,7 +40,7 @@ const VIBE_LABELS: Record<string, { label: string; color: string }> = {
   黑色: { label: '黑色', color: '#3f3f46' },
   讽刺: { label: '讽刺', color: '#881337' },
   暴力: { label: '暴力', color: '#9f1239' },
-  小众: { label: '小众', color: '#a21caf' },
+  特色: { label: '特色', color: '#a21caf' },
   冷门: { label: '冷门', color: '#6b21a8' },
   遗珠: { label: '遗珠', color: '#86198f' },
   浪漫: { label: '浪漫', color: '#f472b6' },

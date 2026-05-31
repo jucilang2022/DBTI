@@ -1,40 +1,47 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Sparkles, Film, Brain } from 'lucide-react'
-import type { Director, Answer, AnswerChoice, QuizQuestion } from '@/types'
+import { ArrowLeft, Film, Brain } from 'lucide-react'
+import type { Director, Answer, AnswerChoice, QuizQuestion, AIAnalysis } from '@/types'
 import { pickRandom, shuffle } from '@/lib/utils'
 import { QuestionCard } from './QuestionCard'
 import { analyzeWithAI } from '@/api/analyze'
 import type { QuizResult } from '@/types'
+import { PageShell } from '@/components/ui/layout'
 
 interface QuizProps {
   directors: Director[]
-  onComplete: (result: QuizResult, questions: QuizQuestion[], answers: Answer[], aiAnalysis: unknown) => void
+  onBack: () => void
+  onComplete: (result: QuizResult, questions: QuizQuestion[], answers: Answer[], aiAnalysis: AIAnalysis | null) => void
 }
 
 const TOTAL_QUESTIONS = 10
+const ANALYZING_PHRASES = [
+  '品味校准中...',
+  '分析你的电影DNA...',
+  'AI 正在脑补你的形象...',
+  '匹配中...',
+  'AI 正在写锐评...',
+  '生成人格报告...',
+]
 
-export function Quiz({ directors, onComplete }: QuizProps) {
+export function Quiz({ directors, onBack, onComplete }: QuizProps) {
   const questions = useMemo(() => {
     const picked = pickRandom(directors, TOTAL_QUESTIONS)
-    return picked.map((director) => ({
-      director,
-      order: shuffle<AnswerChoice>(['famous', 'controversial', 'hidden', 'other', 'unknown']),
-    }))
+    return picked.map((director) => {
+      const order: AnswerChoice[] = [
+        ...shuffle<AnswerChoice>(['famous', 'controversial', 'hidden']),
+        'other',
+        'unknown',
+      ]
+
+      return { director, order }
+    })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Answer[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisPhase, setAnalysisPhase] = useState<'local' | 'ai' | 'done'>('local')
-  const analyzingPhrases = useRef([
-    '品味校准中...',
-    '分析你的电影DNA...',
-    'AI 正在脑补你的形象...',
-    '匹配中...',
-    'AI 正在写锐评...',
-    '生成人格报告...',
-  ])
   const [phraseIndex, setPhraseIndex] = useState(0)
 
   const currentQuestion = questions[currentIndex]
@@ -49,7 +56,7 @@ export function Quiz({ directors, onComplete }: QuizProps) {
         // 进入 AI 阶段后切换另一组词
         if (analysisPhase === 'ai' && i < 4) return 4
         if (analysisPhase === 'local' && i >= 4) return 0
-        return (i + 1) % analyzingPhrases.current.length
+        return (i + 1) % ANALYZING_PHRASES.length
       })
     }, 600)
 
@@ -57,7 +64,7 @@ export function Quiz({ directors, onComplete }: QuizProps) {
     const localDone = setTimeout(async () => {
       setAnalysisPhase('ai')
 
-      const aiTimer = setTimeout(async () => {
+      setTimeout(async () => {
         const { result, aiAnalysis } = await analyzeWithAI(answers, directors)
         setAnalysisPhase('done')
         // 留 0.5s 展示完成动画
@@ -96,7 +103,15 @@ export function Quiz({ directors, onComplete }: QuizProps) {
   // 答题阶段
   if (!isAnalyzing && currentQuestion) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center py-12">
+      <PageShell contentClassName="pt-8 pb-14 sm:pt-12">
+        <button
+          onClick={onBack}
+          className="mb-6 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-zinc-500 transition-colors hover:text-white"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          返回首页
+        </button>
+
         <AnimatePresence mode="wait">
           <QuestionCard
             key={currentQuestion.director.id}
@@ -107,7 +122,7 @@ export function Quiz({ directors, onComplete }: QuizProps) {
             onSelect={handleSelect}
           />
         </AnimatePresence>
-      </div>
+      </PageShell>
     )
   }
 
@@ -115,7 +130,7 @@ export function Quiz({ directors, onComplete }: QuizProps) {
   const showAIBadge = analysisPhase === 'ai' || analysisPhase === 'done'
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-6">
+    <PageShell centered>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -152,7 +167,7 @@ export function Quiz({ directors, onComplete }: QuizProps) {
 
         {showAIBadge && (
           <motion.div
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium mb-4"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-5"
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -168,12 +183,12 @@ export function Quiz({ directors, onComplete }: QuizProps) {
           exit={{ opacity: 0, y: -8 }}
           className="text-lg text-zinc-300 font-medium"
         >
-          {analyzingPhrases.current[phraseIndex % analyzingPhrases.current.length]}
+          {ANALYZING_PHRASES[phraseIndex % ANALYZING_PHRASES.length]}
         </motion.p>
         <p className="text-xs text-zinc-600 mt-2">
           {analysisPhase === 'local' ? '本地算法分析中...' : 'AI 正在生成个性化锐评...'}
         </p>
       </motion.div>
-    </div>
+    </PageShell>
   )
 }

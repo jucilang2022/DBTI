@@ -5,8 +5,17 @@ import { Result } from '@/components/Result'
 import { HistoryPage } from '@/components/HistoryPage'
 import { TypeExplorer } from '@/components/TypeExplorer'
 import type { QuizResult, Director, Answer, QuizQuestion, AIAnalysis } from '@/types'
+import { Button, PageShell } from '@/components/ui/layout'
 
 type Phase = 'loading' | 'start' | 'quiz' | 'result' | 'history' | 'explore'
+
+interface StoredResultEntry {
+  id: string
+  result: QuizResult
+  questions: QuizQuestion[]
+  answers: Answer[]
+  aiAnalysis?: AIAnalysis | null
+}
 
 export default function App() {
   const [phase, setPhase] = useState<Phase>('loading')
@@ -16,6 +25,7 @@ export default function App() {
     questions: QuizQuestion[]
     answers: Answer[]
     aiAnalysis: AIAnalysis | null
+    resultId: string
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -49,7 +59,12 @@ export default function App() {
     aiAnalysis: AIAnalysis | null,
   ) => {
     setResult(quizResult)
-    setQuizData({ questions, answers, aiAnalysis })
+    setQuizData({
+      questions,
+      answers,
+      aiAnalysis,
+      resultId: `${Date.now()}-${crypto.randomUUID()}`,
+    })
     setPhase('result')
   }
 
@@ -59,53 +74,62 @@ export default function App() {
     setPhase('start')
   }
 
+  const handleSelectHistoryResult = (entry: StoredResultEntry) => {
+    setResult(entry.result)
+    setQuizData({
+      questions: entry.questions,
+      answers: entry.answers,
+      aiAnalysis: entry.aiAnalysis ?? null,
+      resultId: entry.id,
+    })
+    setPhase('result')
+  }
+
   if (phase === 'loading') {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <PageShell centered>
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-sm text-zinc-500">加载导演数据库...</p>
         </div>
-      </div>
+      </PageShell>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-6">
-        <div className="text-center">
-          <p className="text-rose-400 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800 transition-colors"
-          >
+      <PageShell centered>
+        <div className="text-center space-y-5">
+          <p className="text-rose-400">{error}</p>
+          <Button onClick={() => window.location.reload()}>
             刷新页面
-          </button>
+          </Button>
         </div>
-      </div>
+      </PageShell>
     )
   }
 
   if (directors.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <PageShell centered>
         <p className="text-zinc-500">暂无导演数据</p>
-      </div>
+      </PageShell>
     )
   }
 
   return (
     <>
       {phase === 'start' && <StartScreen onStart={handleStart} onHistory={handleHistory} onExplore={handleExplore} />}
-      {phase === 'history' && <HistoryPage onBack={() => setPhase('start')} />}
+      {phase === 'history' && <HistoryPage onBack={() => setPhase('start')} onSelectResult={handleSelectHistoryResult} />}
       {phase === 'explore' && <TypeExplorer onBack={() => setPhase('start')} />}
-      {phase === 'quiz' && <Quiz directors={directors} onComplete={handleComplete} />}
+      {phase === 'quiz' && <Quiz directors={directors} onBack={() => setPhase('start')} onComplete={handleComplete} />}
       {phase === 'result' && result && quizData && (
         <Result
           result={result}
           questions={quizData.questions}
           answers={quizData.answers}
           aiAnalysis={quizData.aiAnalysis}
+          resultId={quizData.resultId}
           onRestart={handleRestart}
         />
       )}

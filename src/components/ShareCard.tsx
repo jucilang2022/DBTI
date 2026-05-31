@@ -1,7 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Sparkles, Film } from 'lucide-react'
+import { X, Sparkles } from 'lucide-react'
 import type { DBTIType } from '@/types'
 import { useEffect, useRef } from 'react'
+import { buttonClasses } from '@/components/ui/buttonStyles'
+import { cn } from '@/lib/utils'
 
 interface ShareCardProps {
   open: boolean
@@ -115,12 +117,12 @@ export function ShareCard({ open, onClose, type, matchScore, knownCount }: Share
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="w-full max-w-sm rounded-3xl bg-zinc-900 border border-zinc-800 p-6"
+            className="w-full max-w-lg rounded-3xl bg-zinc-900 border border-zinc-800 p-6"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
           >
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-400" />
                 <span className="text-sm font-semibold text-white">分享卡片</span>
@@ -134,7 +136,7 @@ export function ShareCard({ open, onClose, type, matchScore, knownCount }: Share
             </div>
 
             {/* Canvas 预览 */}
-            <div className="rounded-2xl overflow-hidden border border-zinc-800 mb-5">
+            <div className="rounded-2xl overflow-hidden border border-zinc-800 mb-6">
               <canvas
                 ref={canvasRef}
                 className="w-full h-auto"
@@ -144,7 +146,7 @@ export function ShareCard({ open, onClose, type, matchScore, knownCount }: Share
 
             <button
               onClick={downloadImage}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-amber-600 text-white font-semibold hover:opacity-90 transition-opacity"
+              className={cn(buttonClasses.primary, 'w-full')}
             >
               保存图片
             </button>

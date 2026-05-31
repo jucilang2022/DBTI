@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ChevronDown, Sparkles, Film } from 'lucide-react'
 import { DBTI_TYPES } from '@/data/dbti-types'
 import { cn } from '@/lib/utils'
+import { PageShell } from '@/components/ui/layout'
+import { buttonClasses } from '@/components/ui/buttonStyles'
 
 interface TypeExplorerProps {
   onBack: () => void
@@ -12,13 +14,13 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
   const [expanded, setExpanded] = useState<string | null>(null)
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      <div className="max-w-lg mx-auto px-6 pt-12 pb-16">
+    <PageShell>
+      <div className="space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+            className={buttonClasses.ghost}
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">返回</span>
@@ -29,21 +31,23 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
           </div>
         </div>
 
-        <motion.h1
-          className="text-2xl font-bold text-white mb-2"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          DBTI 人格全览
-        </motion.h1>
-        <motion.p
-          className="text-sm text-zinc-500 mb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-        >
-          12 种导演人格，你是哪一种？
-        </motion.p>
+        <div>
+          <motion.h1
+            className="text-2xl font-bold text-white mb-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            DBTI 人格全览
+          </motion.h1>
+          <motion.p
+            className="text-sm text-zinc-500"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            16 种导演人格，你是哪一种？
+          </motion.p>
+        </div>
 
         {/* 所有类型 */}
         <div className="space-y-3">
@@ -59,24 +63,24 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
               >
                 <button
                   onClick={() => setExpanded(isOpen ? null : type.id)}
-                  className="w-full flex items-center justify-between p-5 text-left"
+                  className="w-full flex items-center justify-between gap-4 p-5 text-left"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-6">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
+                      className="w-16 h-10 rounded-xl flex items-center justify-center font-mono text-sm font-bold tracking-wider"
                       style={{ backgroundColor: type.color + '20', color: type.color }}
                     >
-                      {type.name.charAt(0)}
+                      {type.id}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-sm font-semibold text-white">{type.name}</div>
-                      <div className="text-[11px] text-zinc-500">{type.nameEn}</div>
+                      <div className="text-xs text-zinc-500 mt-0.5">{type.nameEn}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     <span
                       className={cn(
-                        'text-[10px] px-2 py-0.5 rounded-full font-medium',
+                        'text-xs px-2.5 py-1 rounded-full font-medium',
                         type.rarity === 'legendary' && 'bg-yellow-500/10 text-yellow-300',
                         type.rarity === 'rare' && 'bg-purple-500/10 text-purple-300',
                         type.rarity === 'uncommon' && 'bg-blue-500/10 text-blue-300',
@@ -106,21 +110,23 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-5 pb-5 space-y-4 border-t border-zinc-800 pt-4">
+                      <div className="px-5 pb-5 space-y-5 border-t border-zinc-800 pt-5">
                         <p className="text-lg text-zinc-300 italic text-center">「{type.tagline}」</p>
                         <p className="text-sm text-zinc-300 leading-relaxed">{type.description}</p>
 
-                        <div className="flex items-center gap-2">
-                          <Film className="w-3.5 h-3.5 text-zinc-500" />
-                          <span className="text-xs text-zinc-500">精神导演</span>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Film className="w-3.5 h-3.5 text-zinc-500" />
+                            <span className="text-xs text-zinc-500">精神导演</span>
+                          </div>
+                          <p className="text-sm text-zinc-300 leading-relaxed">{type.spiritDirector}</p>
                         </div>
-                        <p className="text-sm text-zinc-300">{type.spiritDirector}</p>
 
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-2">
                           {type.tags.map((tag) => (
                             <span
                               key={tag}
-                              className="px-2 py-1 rounded-full text-[10px] font-medium"
+                              className="px-2.5 py-1 rounded-full text-xs font-medium"
                               style={{
                                 backgroundColor: type.color + '15',
                                 color: type.color,
@@ -131,7 +137,7 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
                           ))}
                         </div>
 
-                        <div className="text-xs text-zinc-500 italic pt-2 border-t border-zinc-800">
+                        <div className="text-xs text-zinc-500 italic pt-4 border-t border-zinc-800 leading-relaxed">
                           {type.quote}
                         </div>
                       </div>
@@ -143,6 +149,6 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
           })}
         </div>
       </div>
-    </div>
+    </PageShell>
   )
 }

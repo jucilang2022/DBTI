@@ -20,7 +20,7 @@ export interface Director {
   famousWork: FilmWork
   /** 争议作品 */
   controversialWork: FilmWork
-  /** 小众佳作 */
+  /** 特色佳作 */
   hiddenGem: FilmWork
   /** 其他知名作品 */
   otherWork: FilmWork

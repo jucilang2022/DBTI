@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion'
-import { Info } from 'lucide-react'
 import type { Director, AnswerChoice } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -9,14 +8,6 @@ interface QuestionCardProps {
   totalQuestions: number
   order: AnswerChoice[]
   onSelect: (choice: AnswerChoice) => void
-}
-
-const OPTION_META: Record<AnswerChoice, { label: string; icon: string; hint: string }> = {
-  famous: { label: '代表作', icon: '⭐', hint: '这位导演最广为人知的作品' },
-  controversial: { label: '低分但不是很低', icon: '🎯', hint: '评分不高但你有自己的品味判断' },
-  hidden: { label: '小众佳片', icon: '💎', hint: '被低估的冷门好片，资深影迷必选' },
-  other: { label: '其他作品', icon: '🎬', hint: '除了以上这些，你更爱导演的这部遗珠' },
-  unknown: { label: '没看过任何一部', icon: '❓', hint: '这位导演暂时不在你的片单里' },
 }
 
 function getChoiceColor(choice: AnswerChoice): string {
@@ -31,6 +22,51 @@ function getChoiceColor(choice: AnswerChoice): string {
       return 'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/15 hover:border-blue-500/50'
     case 'unknown':
       return 'border-zinc-600/30 bg-zinc-800/5 hover:bg-zinc-800/20 hover:border-zinc-500/50'
+  }
+}
+
+function getOptionEmoji(choice: AnswerChoice): string {
+  switch (choice) {
+    case 'famous':
+      return '⭐'
+    case 'controversial':
+      return '🎯'
+    case 'hidden':
+      return '💎'
+    case 'other':
+      return '🎬'
+    case 'unknown':
+      return '❓'
+  }
+}
+
+function getOptionText(director: Director, choice: AnswerChoice): { title: string; description: string } {
+  switch (choice) {
+    case 'famous':
+      return {
+        title: `《${director.famousWork.title}》（${director.famousWork.year}）`,
+        description: director.famousWork.description,
+      }
+    case 'controversial':
+      return {
+        title: `《${director.controversialWork.title}》（${director.controversialWork.year}）`,
+        description: director.controversialWork.description,
+      }
+    case 'hidden':
+      return {
+        title: `《${director.hiddenGem.title}》（${director.hiddenGem.year}）`,
+        description: director.hiddenGem.description,
+      }
+    case 'other':
+      return {
+        title: '其他作品',
+        description: '对该导演有更喜欢的作品',
+      }
+    case 'unknown':
+      return {
+        title: '没看过任何一部',
+        description: '对该导演不太熟悉',
+      }
   }
 }
 
@@ -50,11 +86,11 @@ export function QuestionCard({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -40 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="w-full max-w-lg mx-auto px-4"
+      className="w-full"
     >
       {/* 进度条 */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
           <span className="text-xs text-zinc-500 font-medium">
             第 {questionIndex + 1} / {totalQuestions} 题
           </span>
@@ -73,46 +109,25 @@ export function QuestionCard({
       </div>
 
       {/* 导演卡片 */}
-      <div className="mb-6">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold mb-4"
-          style={{ backgroundColor: director.color + '20' }}
-        >
-          <span style={{ color: director.color }}>
-            {director.name.charAt(0)}
-          </span>
+      <div className="mb-9">
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold leading-none text-white">{director.name}</h2>
+          <p className="mt-2 text-sm leading-none text-zinc-400">{director.nameEn}</p>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-1">{director.name}</h2>
-        <p className="text-sm text-zinc-400">{director.nameEn}</p>
-        <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{director.bio}</p>
+        <p className="text-sm text-zinc-500 mt-4 leading-relaxed">{director.bio}</p>
       </div>
 
-      {/* 题干 */}
-      <p className="text-sm text-zinc-300 mb-4 font-medium">
-        以下作品中，你最喜欢的是：
-      </p>
-
       {/* 选项 */}
-      <div className="space-y-2.5">
+      <div className="space-y-5">
         {order.map((choice, idx) => {
-          const opt = OPTION_META[choice]
-          const work =
-            choice === 'famous'
-              ? director.famousWork
-              : choice === 'controversial'
-                ? director.controversialWork
-                : choice === 'hidden'
-                  ? director.hiddenGem
-                  : choice === 'other'
-                    ? director.otherWork
-                    : null
+          const option = getOptionText(director, choice)
 
           return (
             <motion.button
               key={choice}
               onClick={() => onSelect(choice)}
               className={cn(
-                'w-full text-left p-4 rounded-2xl border transition-all duration-200 group',
+                'w-full text-left px-4 py-3.5 rounded-2xl border-2 shadow-lg shadow-black/10 transition-all duration-200 group',
                 getChoiceColor(choice),
               )}
               initial={{ opacity: 0, y: 10 }}
@@ -121,27 +136,13 @@ export function QuestionCard({
               whileHover={{ x: 4 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-start gap-3">
-                <span className="text-lg shrink-0 mt-0.5">{opt.icon}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-sm font-semibold text-white">
-                      {opt.label}
-                    </span>
-                    <span
-                      className="text-[10px] text-zinc-600 group-hover:text-zinc-500 transition-colors"
-                      title={opt.hint}
-                    >
-                      <Info className="w-3 h-3" />
-                    </span>
-                  </div>
-                  {work ? (
-                    <div className="text-xs text-zinc-400">
-                      《{work.title}》（{work.year}）— {work.description}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-zinc-500">这部电影不太熟悉</div>
-                  )}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-sm font-semibold leading-snug text-white">
+                  <span className="shrink-0">{getOptionEmoji(choice)}</span>
+                  <span>{option.title}</span>
+                </div>
+                <div className="pl-24 text-xs leading-relaxed text-zinc-500 group-hover:text-zinc-400">
+                  - {option.description}
                 </div>
               </div>
             </motion.button>

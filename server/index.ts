@@ -9,6 +9,7 @@ app.use(express.json())
 const AI_API_KEY = process.env.AI_API_KEY || process.env.DEEPSEEK_API_KEY
 const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.deepseek.com'
 const AI_MODEL = process.env.AI_MODEL || 'deepseek-chat'
+const hasValidApiKey = Boolean(AI_API_KEY && !AI_API_KEY.includes('your-') && !AI_API_KEY.includes('here'))
 
 const PORT = process.env.PORT || 3099
 
@@ -19,17 +20,18 @@ function buildSystemPrompt(): string {
   return `你是 DBTI（Director Based Type Indicator）的分析师，一个毒舌但精准的电影人格测评师。
 
 你的任务：
-1. 根据用户的 10 道题答题记录，从给定的 12+4 种 DBTI 人格中选出最匹配的 1 个
+1. 根据本地算法已经算出的 DBTI 类型，生成个性化中文分析
 2. 用中文输出分析结果，格式固定为 JSON
 
 分析原则：
 - 仔细看用户的每个选择：选了哪个导演的哪部作品
-- 观察模式：用户偏爱哪种类型的作品？代表作/争议作/小众/其他/没看过？
-- 如果用户超过一半选了「没看过」，优先匹配"影坛白纸"
-- 如果用户超过一半选了「小众佳作」，优先匹配"小众装逼犯"
-- 如果用户超过一半选了「争议之作」，优先匹配"吃瓜群众"
-- 如果用户超过一半选了「代表作」，优先匹配"大众点评"
-- 否则根据作品中的 vibe 标签分布来匹配最接近的人格
+- 观察模式：用户偏爱哪种类型的作品？代表作/争议作/特色/其他/没看过？
+- 「其他作品」不是数据库中的某一部具体电影，表示用户有自己的偏好，不被给出的答案拘束；不要把它映射成某个导演的固定作品
+- 「特色佳作」是用户明确选择了一部具体电影，不是「没看过」
+- 「没看过」只能来自 choiceLabel 为「没看过」或 choice 为 "unknown" 的答题记录；严禁把「特色佳作」或「其他作品」说成没看过
+- 不使用特殊人格兜底；即使用户大量选择「没看过」或「代表作」，也必须从给定的 16 种 DBTI 中选择
+- DBTI 类型已由本地四维算法确定，你必须沿用用户数据里的 localResult.typeId，不要自行改成其他类型
+- 根据 localResult.choiceCounts 里的真实数量解释为什么 localResult.typeId 合理；不得编造与 choiceCounts 相反的数量
 - matchScore 要基于匹配置信度给出合理分数（0-100）
 
 输出格式（严格 JSON，不要 markdown 代码块，只输出纯 JSON）：
@@ -51,6 +53,7 @@ function buildUserDataPrompt(
   answers: unknown,
   directors: unknown,
   types: unknown,
+  localResult: unknown,
 ): string {
   return `以下是用户的 10 道题答题记录：
 ${JSON.stringify(answers, null, 2)}
@@ -61,19 +64,22 @@ ${JSON.stringify(directors, null, 2)}
 以下是所有 DBTI 人格定义：
 ${JSON.stringify(types, null, 2)}
 
-请根据以上数据，分析用户匹配哪一种 DBTI 人格，并输出 JSON 结果。`
+以下是本地四维算法已经确定的结果，请务必沿用其中的 typeId：
+${JSON.stringify(localResult, null, 2)}
+
+请根据以上数据，为 localResult.typeId 生成个性化分析，并输出 JSON 结果。`
 }
 
 app.post('/api/analyze', async (req, res) => {
   try {
-    const { answers, directors, types } = req.body
+    const { answers, directors, types, localResult } = req.body
 
-    if (!answers || !directors || !types) {
-      res.status(400).json({ error: '缺少必要参数：answers, directors, types' })
+    if (!answers || !directors || !types || !localResult) {
+      res.status(400).json({ error: '缺少必要参数：answers, directors, types, localResult' })
       return
     }
 
-    if (!AI_API_KEY) {
+    if (!hasValidApiKey) {
       // 没有 API key：退回本地算法结果
       res.status(503).json({
         error: 'AI_API_KEY 未配置',
@@ -93,7 +99,7 @@ app.post('/api/analyze', async (req, res) => {
         model: AI_MODEL,
         messages: [
           { role: 'system', content: buildSystemPrompt() },
-          { role: 'user', content: buildUserDataPrompt(answers, directors, types) },
+          { role: 'user', content: buildUserDataPrompt(answers, directors, types, localResult) },
         ],
         temperature: 0.8,
         max_tokens: 2000,
