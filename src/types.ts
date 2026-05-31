@@ -65,6 +65,28 @@ export interface QuizQuestion {
   order: AnswerChoice[]
 }
 
+/** 价值观题目 */
+export interface ValueQuestion {
+  id: string
+  /** 题目文本 */
+  question: string
+  /** 选项列表 */
+  options: ValueOption[]
+}
+
+/** 价值观题的一个选项 */
+export interface ValueOption {
+  text: string
+  /** 该选项贡献的维度分数，如 { p: 1, c: 1 } */
+  dims: Record<string, number>
+}
+
+/** 用户对价值观题的回答 */
+export interface ValueAnswer {
+  questionId: string
+  selectedIndex: number
+}
+
 /** AI 分析结果 */
 export interface AIAnalysis {
   typeId: string
@@ -91,4 +113,8 @@ export interface QuizResult {
   matchScore: number
   /** 选了该导演最早作品的次数 */
   earliestYearPicks?: number
+  /** 价值观题回答 */
+  valueAnswers?: ValueAnswer[]
+  /** 回答的价值观题总数 */
+  valueQuestionCount?: number
 }

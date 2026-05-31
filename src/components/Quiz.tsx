@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Film, Brain } from 'lucide-react'
-import type { Director, Answer, AnswerChoice, QuizQuestion, AIAnalysis } from '@/types'
+import type { Director, Answer, AnswerChoice, QuizQuestion, AIAnalysis, ValueQuestion, ValueAnswer } from '@/types'
 import { pickRandom, shuffle } from '@/lib/utils'
 import { QuestionCard } from './QuestionCard'
+import { ValueQuestionCard } from './ValueQuestionCard'
 import { analyzeWithAI } from '@/api/analyze'
 import type { QuizResult } from '@/types'
 import { PageShell } from '@/components/ui/layout'
+import { valueQuestions as allValueQuestions } from '@/data/value-questions'
 
 interface QuizProps {
   directors: Director[]
@@ -14,7 +16,14 @@ interface QuizProps {
   onComplete: (result: QuizResult, questions: QuizQuestion[], answers: Answer[], aiAnalysis: AIAnalysis | null) => void
 }
 
-const TOTAL_QUESTIONS = 10
+const DIRECTOR_COUNT = 8
+const VALUE_COUNT = allValueQuestions.length
+const TOTAL_QUESTIONS = DIRECTOR_COUNT + VALUE_COUNT
+
+type QuizItem =
+  | { kind: 'director'; director: Director; order: AnswerChoice[] }
+  | { kind: 'value'; question: ValueQuestion }
+
 const ANALYZING_PHRASES = [
   '品味校准中...',
   '分析你的电影DNA...',
@@ -25,56 +34,109 @@ const ANALYZING_PHRASES = [
 ]
 
 export function Quiz({ directors, onBack, onComplete }: QuizProps) {
-  const questions = useMemo(() => {
-    const picked = pickRandom(directors, TOTAL_QUESTIONS)
-    return picked.map((director) => {
+  /* ---- 创建混合题目列表 ---- */
+  const items = useMemo(() => {
+    const picked = pickRandom(directors, DIRECTOR_COUNT)
+    const directorItems: QuizItem[] = picked.map((director) => {
       const order: AnswerChoice[] = [
         ...shuffle<AnswerChoice>(['famous', 'controversial', 'hidden']),
         'other',
         'unknown',
       ]
-
-      return { director, order }
+      return { kind: 'director' as const, director, order }
     })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    const valueItems: QuizItem[] = allValueQuestions.map((q) => ({
+      kind: 'value' as const,
+      question: q,
+    }))
+
+    // 合并打乱，但保证第一题是导演题（体验更好）
+    const combined = shuffle(directorItems.slice(1).concat(valueItems))
+    return [directorItems[0], ...combined]
+  }, [])
+
+  // 从 items 中提取 questions（给 onComplete 用）
+  const questions = useMemo(() => {
+    return items
+      .filter((item): item is QuizItem & { kind: 'director' } => item.kind === 'director')
+      .map((item) => ({ director: item.director, order: item.order }))
+  }, [items])
 
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [answers, setAnswers] = useState<Answer[]>([])
+  const [directorAnswers, setDirectorAnswers] = useState<Answer[]>([])
+  const [valueAnswers, setValueAnswers] = useState<ValueAnswer[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisPhase, setAnalysisPhase] = useState<'local' | 'ai' | 'done'>('local')
   const [phraseIndex, setPhraseIndex] = useState(0)
 
-  const currentQuestion = questions[currentIndex]
+  const currentItem = items[currentIndex]
 
-  // 分析阶段：切换提示词 + 完成后调 AI
+  /* ---- 答题处理 ---- */
+  const handleDirectorSelect = useCallback(
+    (choice: AnswerChoice) => {
+      if (currentItem?.kind !== 'director') return
+      const newAnswers = [
+        ...directorAnswers,
+        { directorId: currentItem.director.id, choice },
+      ]
+      setDirectorAnswers(newAnswers)
+
+      if (newAnswers.length + valueAnswers.length >= TOTAL_QUESTIONS) {
+        // 所有题答完
+        setIsAnalyzing(true)
+      } else {
+        setCurrentIndex((i) => i + 1)
+      }
+    },
+    [currentItem, directorAnswers, valueAnswers],
+  )
+
+  const handleValueSelect = useCallback(
+    (optionIndex: number) => {
+      if (currentItem?.kind !== 'value') return
+      const newAnswers = [
+        ...valueAnswers,
+        { questionId: currentItem.question.id, selectedIndex: optionIndex },
+      ]
+      setValueAnswers(newAnswers)
+
+      if (directorAnswers.length + newAnswers.length >= TOTAL_QUESTIONS) {
+        setIsAnalyzing(true)
+      } else {
+        setCurrentIndex((i) => i + 1)
+      }
+    },
+    [currentItem, directorAnswers, valueAnswers],
+  )
+
+  /* ---- 分析阶段动画 ---- */
   useEffect(() => {
     if (!isAnalyzing) return
 
-    // 切换提示词
     const timer = setInterval(() => {
       setPhraseIndex((i) => {
-        // 进入 AI 阶段后切换另一组词
         if (analysisPhase === 'ai' && i < 4) return 4
         if (analysisPhase === 'local' && i >= 4) return 0
         return (i + 1) % ANALYZING_PHRASES.length
       })
     }, 600)
 
-    // 先本地分析（显示 1.2s），再 AI 分析（最多 5s）
     const localDone = setTimeout(async () => {
       setAnalysisPhase('ai')
 
       setTimeout(async () => {
-        const { result, aiAnalysis } = await analyzeWithAI(answers, directors)
+        const { result, aiAnalysis } = await analyzeWithAI(
+          directorAnswers,
+          valueAnswers,
+          directors,
+          allValueQuestions,
+        )
         setAnalysisPhase('done')
-        // 留 0.5s 展示完成动画
         setTimeout(() => {
-          onComplete(result, questions, answers, aiAnalysis)
+          onComplete(result, questions, directorAnswers, aiAnalysis)
         }, 500)
-      }, 4000) // 最多等 4s AI 响应
+      }, 4000)
 
-      // 如果 AI 超过时间还没回来，用本地结果
-      // 但实际上 analyzeWithAI 内部有超时保护
     }, 1200)
 
     return () => {
@@ -83,25 +145,8 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
     }
   }, [isAnalyzing]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSelect = useCallback(
-    (choice: AnswerChoice) => {
-      const newAnswers = [
-        ...answers,
-        { directorId: currentQuestion.director.id, choice },
-      ]
-      setAnswers(newAnswers)
-
-      if (newAnswers.length === TOTAL_QUESTIONS) {
-        setIsAnalyzing(true)
-      } else {
-        setCurrentIndex((i) => i + 1)
-      }
-    },
-    [answers, currentQuestion],
-  )
-
-  // 答题阶段
-  if (!isAnalyzing && currentQuestion) {
+  /* ---- 答题阶段 ---- */
+  if (!isAnalyzing && currentItem) {
     return (
       <PageShell contentClassName="pt-8 pb-14 sm:pt-12">
         <button
@@ -113,20 +158,30 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
         </button>
 
         <AnimatePresence mode="wait">
-          <QuestionCard
-            key={currentQuestion.director.id}
-            director={currentQuestion.director}
-            questionIndex={currentIndex}
-            totalQuestions={TOTAL_QUESTIONS}
-            order={currentQuestion.order}
-            onSelect={handleSelect}
-          />
+          {currentItem.kind === 'director' ? (
+            <QuestionCard
+              key={`d-${currentItem.director.id}`}
+              director={currentItem.director}
+              questionIndex={currentIndex}
+              totalQuestions={TOTAL_QUESTIONS}
+              order={currentItem.order}
+              onSelect={handleDirectorSelect}
+            />
+          ) : (
+            <ValueQuestionCard
+              key={`v-${currentItem.question.id}`}
+              question={currentItem.question}
+              questionIndex={currentIndex}
+              totalQuestions={TOTAL_QUESTIONS}
+              onSelect={handleValueSelect}
+            />
+          )}
         </AnimatePresence>
       </PageShell>
     )
   }
 
-  // 分析加载页
+  /* ---- 分析加载页 ---- */
   const showAIBadge = analysisPhase === 'ai' || analysisPhase === 'done'
 
   return (
@@ -137,7 +192,6 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
         className="text-center"
       >
         <div className="relative mx-auto mb-8 w-24 h-24">
-          {/* 旋转光圈 */}
           <motion.div
             className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-500"
             animate={{ rotate: 360 }}
@@ -148,7 +202,6 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
             animate={{ rotate: -360 }}
             transition={{ duration: 1.8, repeat: Infinity, ease: 'linear' }}
           />
-          {/* AI 阶段额外光圈 */}
           {showAIBadge && (
             <motion.div
               className="absolute inset-4 rounded-full border-2 border-transparent border-t-emerald-500"

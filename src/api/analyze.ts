@@ -1,4 +1,4 @@
-import type { Answer, Director } from '@/types'
+import type { Answer, ValueAnswer, Director, ValueQuestion } from '@/types'
 import { DBTI_TYPES } from '@/data/dbti-types'
 import { analyzeQuiz } from '@/data/quiz-analyzer'
 import type { QuizResult } from '@/types'
@@ -42,16 +42,20 @@ function getSelectedWork(director: Director, choice: Answer['choice']) {
 /**
  * 调用 AI 分析用户答题结果。
  *
- * 1. 先走本地算法得到基础结果
+ * 1. 先走本地算法得到基础结果（含价值观题）
  * 2. 同时尝试调 AI API 获取个性化分析
  * 3. AI 成功则展示个性化文案；类型和四维结果始终以本地算法为准
  */
 export async function analyzeWithAI(
   answers: Answer[],
+  valueAnswers: ValueAnswer[],
   directors: Director[],
+  valueQuestions: ValueQuestion[],
 ): Promise<{ result: QuizResult; aiAnalysis: AIAnalysisResponse | null }> {
-  // 本地算法兜底
-  const localResult = analyzeQuiz(answers, directors)
+  // 本地算法兜底（含价值观题维度直算）
+  const localResult = analyzeQuiz(answers, valueAnswers, directors, valueQuestions)
+
+  // 为 AI 构建分析数据
   const answersForAnalysis = answers.map((answer, index) => {
     const director = directors.find((item) => item.id === answer.directorId)
     const selectedWork = director ? getSelectedWork(director, answer.choice) : null
@@ -78,6 +82,18 @@ export async function analyzeWithAI(
             : undefined,
     }
   })
+
+  // 为 AI 构建价值观题分析数据
+  const valueAnswersForAnalysis = valueAnswers.map((va, index) => {
+    const q = valueQuestions.find((q) => q.id === va.questionId)
+    const selectedOption = q?.options[va.selectedIndex]
+    return {
+      index: index + 1,
+      question: q?.question ?? va.questionId,
+      selectedOption: selectedOption?.text ?? `选项 ${va.selectedIndex}`,
+    }
+  })
+
   const directorsForAnalysis = directors.map((director) => ({
     id: director.id,
     name: director.name,
@@ -95,6 +111,7 @@ export async function analyzeWithAI(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         answers: answersForAnalysis,
+        valueAnswers: valueAnswersForAnalysis,
         directors: directorsForAnalysis,
         types: DBTI_TYPES,
         localResult: {
@@ -105,6 +122,7 @@ export async function analyzeWithAI(
           dimensions: localResult.dimensions,
           choiceCounts: localResult.choiceCounts,
           knownCount: localResult.knownCount,
+          valueQuestionCount: localResult.valueQuestionCount,
         },
       }),
     })
