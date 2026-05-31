@@ -11,14 +11,14 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     question: '《肖申克的救赎》常年霸占豆瓣TOP1你认为这个地位？',
     options: [
       { text: '实至名归，它承载了最多人的共鸣。', dims: { c: 1 } },
-      { text: '有点过誉，豆瓣榜单审美偏单一。', dims: { g: 1 } },
-      { text: '正常，质量过硬但也不算神作。', dims: { o: 1 } },
+      { text: '比较过誉，豆瓣榜单审美偏单一。', dims: { g: 1 } },
+      { text: '无感，质量过硬但也不算神作。', dims: { o: 1 } },
     ],
   },
   {
     id: 'self_2',
     type: 'self_cognition',
-    question: '《地球最后的夜晚》戛纳评价两极豆瓣6.9你怎么看？',
+    question: '《地球最后的夜晚》戛纳获提名但豆瓣6.9分，你的看法是？',
     options: [
       { text: '分低了，大众对实验电影太苛刻。', dims: { n: 1, a: 1 } },
       { text: '分差不多了，就是少数人的菜。', dims: { o: 1 } },
@@ -30,8 +30,8 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     type: 'self_cognition',
     question: '一部你私心很爱的冷门片豆瓣不到7分你会？',
     options: [
-      { text: '觉得豆瓣越来越不靠谱了。', dims: { g: 1 } },
-      { text: '理解不是所有人都能get到。', dims: { a: 1 } },
+      { text: '觉得豆瓣越来越不靠谱了，应该高分。', dims: { g: 1 } },
+      { text: '理解不是所有人都能get到，但不应该低分。', dims: { a: 1 } },
       { text: '遗憾但不意外，它确实不够大众。', dims: { n: 1 } },
     ],
   },
@@ -42,7 +42,7 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     options: [
       { text: '合理，商业与艺术兼备的好片。', dims: { c: 1 } },
       { text: '过高了，诺兰光环加成。', dims: { g: 1 } },
-      { text: '低了，它比很多9分文艺片更打动我。', dims: { a: 1, n: 1 } },
+      { text: '低了，我心中的top10之一。', dims: { a: 1, n: 1 } },
     ],
   },
   {
@@ -68,11 +68,11 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
   {
     id: 'self_7',
     type: 'self_cognition',
-    question: '你觉得自己在朋友圈里的电影品味属于什么水平？',
+    question: '你觉得自己的电影品味在影迷中处于什么水平？',
     options: [
       { text: '公认的权威，大家都在跟我看片。', dims: { m: 1, n: 1 } },
       { text: '还行，跟得上主流话题。', dims: { p: 1, s: 1 } },
-      { text: '我的品味可能有点怪，朋友不太理解。', dims: { g: 1, o: 1 } },
+      { text: '我的品味可能有点怪，别人不太理解。', dims: { g: 1, o: 1 } },
     ],
   },
   {
@@ -92,7 +92,7 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
     options: [
       { text: '依然去看，相信导演的水平。', dims: { g: 1, o: 1 } },
       { text: '等口碑稳定了再说，不冒险。', dims: { c: 1, o: 1 } },
-      { text: '第一时间看，作为迷影必须要见证全过程。', dims: { m: 1, g: 1 } },
+      { text: '不在意分数，作为迷影必须要见证全过程。', dims: { m: 1, g: 1 } },
     ],
   },
   {

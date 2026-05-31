@@ -13,6 +13,7 @@ export const scenarioQuestions: ChoiceQuestion[] = [
       { text: '提前做功课，了解一下背景。', dims: { m: 1 } },
       { text: '直接看，不想被剧透。', dims: { s: 1 } },
       { text: '负责挑片，选一部大家都能接受的。', dims: { p: 1, c: 1 } },
+      { text: '随便，看什么都行，重在社交。', dims: { s: 1, g: 1 } },
     ],
   },
   {
@@ -38,10 +39,10 @@ export const scenarioQuestions: ChoiceQuestion[] = [
   {
     id: 'sc_4',
     type: 'scenario',
-    question: '去电影院看电影你怎么选座位？',
+    question: '去电影节看电影你怎么选座位？',
     options: [
-      { text: '提前研究最佳位置，必须黄金区。', dims: { m: 1 } },
-      { text: '差不多随缘，哪空坐哪。', dims: { s: 1 } },
+      { text: '提前研究最佳位置，到点抢黄金区。', dims: { m: 1 } },
+      { text: '差不多随缘，哪空坐哪，主打一个参与感。', dims: { s: 1 } },
       { text: '选后排角落，观影视野最完整。', dims: { n: 1, o: 1 } },
     ],
   },
@@ -174,10 +175,10 @@ export const scenarioQuestions: ChoiceQuestion[] = [
     type: 'scenario',
     question: '短视频上刷到一部老电影的解说版，你从没看过原片，你会？',
     options: [
-      { text: '看完解说就当看过了，节约时间。', dims: { s: 1, p: 1 } },
-      { text: '立刻关掉去找原片看，解说会毁了第一体验。', dims: { a: 1, n: 1 } },
+      { text: '看完解说就当看过了，不再去看原片。', dims: { s: 1, p: 1 } },
+      { text: '立刻去找原片看，解说会毁了第一体验。', dims: { a: 1, n: 1 } },
       { text: '看完解说后决定值不值得找原片看。', dims: { g: 1, a: 1 } },
-      { text: '从来不看电影解说，那是对电影的不尊重。', dims: { m: 1, c: 1 } },
+      { text: '从来不看电影解说，也不会刷到。', dims: { m: 1, c: 1 } },
     ],
   },
   {

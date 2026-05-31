@@ -51,7 +51,7 @@ export const valueQuestions: ChoiceQuestion[] = [
   {
     id: 'v_narrative',
     type: 'value',
-    question: '你更喜欢哪种叙事？',
+    question: '对于故事片，你更喜欢哪种叙事？',
     options: [
       {
         text: '线性叙事，起承转合清晰。',
@@ -353,7 +353,7 @@ export const valueQuestions: ChoiceQuestion[] = [
   {
     id: 'v_17',
     type: 'value',
-    question: '你更相信哪种选片逻辑？',
+    question: '在选片时，你更相信哪种逻辑？',
     options: [
       { text: '热榜和大众口碑，跟着看不会大错。', dims: { p: 1, s: 1 } },
       { text: '低分高讨论，越争议越值得亲自验证。', dims: { g: 1, o: 1 } },
