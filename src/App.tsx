@@ -88,14 +88,21 @@ export default function App() {
   }
 
   const handleSelectHistoryResult = (entry: StoredResultEntry) => {
-    // 将 localStorage 中存储的旧 Answer[] 转为 QuizAnswer[]
-    const convertedAnswers: QuizAnswer[] = entry.answers.map((a) => ({
-      questionType: 'director_work' as const,
-      questionId: a.directorId,
-      selectedIndex: 0,
-      directorId: a.directorId,
-      choice: a.choice,
-    }))
+    // 兼容处理：新格式（含 questionType）或旧格式（只有 directorId/choice）
+    const convertedAnswers: QuizAnswer[] = entry.answers.map((a) => {
+      // 新格式：已经有 questionType
+      if ('questionType' in a) {
+        return a as unknown as QuizAnswer
+      }
+      // 旧格式：转成 director_work
+      return {
+        questionType: 'director_work' as const,
+        questionId: a.directorId,
+        selectedIndex: 0,
+        directorId: a.directorId,
+        choice: a.choice,
+      }
+    })
     setResult(entry.result)
     setQuizData({
       questions: entry.questions,

@@ -14,6 +14,8 @@ const OPTION_STYLES = [
   'border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15 hover:border-emerald-500/50',
   'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/15 hover:border-blue-500/50',
   'border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/15 hover:border-rose-500/50',
+  'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/15 hover:border-amber-500/50',
+  'border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/15 hover:border-purple-500/50',
 ]
 
 export function ScenarioCard({

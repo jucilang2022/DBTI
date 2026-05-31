@@ -9,6 +9,10 @@ import { getRarityLabel } from '@/data/quiz-analyzer'
 import { DBTI_TYPES, getDimensionLabels } from '@/data/dbti-types'
 import { cn } from '@/lib/utils'
 import { ShareCard } from './ShareCard'
+import { compareQuestions } from '@/data/director_compare_questions'
+import { valueQuestions } from '@/data/value-questions'
+import { scenarioQuestions } from '@/data/scenario_questions'
+import { selfCognitionQuestions } from '@/data/self_cognition_questions'
 import { Card, PageShell } from '@/components/ui/layout'
 import { buttonClasses } from '@/components/ui/buttonStyles'
 
@@ -52,13 +56,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
       const history = JSON.parse(localStorage.getItem('dbti_history') || '[]')
       if (history.some((entry: { id?: string }) => entry.id === resultId)) return
 
-      // 将 QuizAnswer[] 转为 Answer[] 存储（历史兼容）
-      const historyAnswers: Answer[] = answers
-        .filter((a): a is QuizAnswer & { directorId: string; choice: AnswerChoice } =>
-          a.questionType === 'director_work' && !!a.directorId && !!a.choice
-        )
-        .map((a) => ({ directorId: a.directorId, choice: a.choice }))
-
+      // 保存完整答题数据（含所有题型）
       history.unshift({
         id: resultId,
         typeId: type.id,
@@ -68,7 +66,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
         timestamp: new Date().toISOString(),
         result,
         questions,
-        answers: historyAnswers,
+        answers: answers as unknown as Answer[],  // 全题型数据存入 answers（HistoryEntry 扩展兼容）
         aiAnalysis: aiAnalysis ?? null,
       })
       localStorage.setItem('dbti_history', JSON.stringify(history.slice(0, 20)))
@@ -118,18 +116,99 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
     }
   }
 
-  // 从 QuizAnswer[] 中提取导演作品题的回答，与 questions 匹配
-  const directorAnswers = answers.filter((a) => a.questionType === 'director_work')
-  const answerPairs: { q: QuizQuestion; a: Answer }[] = questions
-    .map((q) => {
-      const matchingAnswer = directorAnswers.find((da) => da.directorId === q.director.id)
-      if (!matchingAnswer || !matchingAnswer.choice) return null
-      return {
-        q,
-        a: { directorId: q.director.id, choice: matchingAnswer.choice },
+  // 构建全题型答案回顾数据
+  type ReviewGroup = {
+    label: string
+    icon: React.ReactNode
+    color: string
+    items: { title: string; detail: string; accent: string }[]
+  }
+
+  const buildReview = (): ReviewGroup[] => {
+    const groups: ReviewGroup[] = []
+
+    // 导演作品题
+    const dwItems = answers
+      .filter((a): a is QuizAnswer & { choice: AnswerChoice } => a.questionType === 'director_work' && !!a.choice)
+      .map((a) => {
+        const q = questions.find((q) => q.director.id === a.directorId)
+        if (!q) return null
+        const meta = CHOICE_META[a.choice]
+        const work = getWorkByChoice(q, a.choice)
+        return {
+          title: q.director.name,
+          detail: work ? `《${work.title}》（${work.year}）` : a.choice === 'unknown' ? '没看过' : '其他作品',
+          accent: meta?.color ?? 'text-zinc-500',
+        }
+      })
+      .filter(Boolean)
+    if (dwItems.length > 0) {
+      groups.push({
+        label: '导演作品',
+        icon: <Film className="w-3.5 h-3.5" />,
+        color: 'text-amber-400',
+        items: dwItems as { title: string; detail: string; accent: string }[],
+      })
+    }
+
+    // 导演对比题
+    const dcItems = answers
+      .filter((a) => a.questionType === 'director_compare')
+      .map((a) => {
+        const q = compareQuestions.find((cq) => cq.id === a.questionId)
+        const dir = q?.directors[a.selectedIndex]
+        if (!dir) return null
+        return {
+          title: q!.question,
+          detail: `→ 选择了 ${dir.name}（${dir.style}）`,
+          accent: 'text-amber-400',
+        }
+      })
+      .filter(Boolean)
+    if (dcItems.length > 0) {
+      groups.push({
+        label: '导演对比',
+        icon: <Clapperboard className="w-3.5 h-3.5" />,
+        color: 'text-amber-400',
+        items: dcItems as { title: string; detail: string; accent: string }[],
+      })
+    }
+
+    // 价值观/情景/自我认知 — 通用处理
+    const choicePools = [
+      { type: 'value' as const, label: '价值观选择', icon: <Sparkles className="w-3.5 h-3.5" />, color: 'text-emerald-400', pool: valueQuestions },
+      { type: 'scenario' as const, label: '情景选择', icon: <Clapperboard className="w-3.5 h-3.5" />, color: 'text-sky-400', pool: scenarioQuestions },
+      { type: 'self_cognition' as const, label: '自我认知', icon: <Brain className="w-3.5 h-3.5" />, color: 'text-purple-400', pool: selfCognitionQuestions },
+    ]
+
+    for (const cp of choicePools) {
+      const items = answers
+        .filter((a) => a.questionType === cp.type)
+        .map((a) => {
+          const q = cp.pool.find((pq) => pq.id === a.questionId)
+          const opt = q?.options[a.selectedIndex]
+          if (!q || !opt) return null
+          return {
+            title: q.question,
+            detail: `→ ${opt.text}`,
+            accent: cp.color,
+          }
+        })
+        .filter(Boolean)
+      if (items.length > 0) {
+        groups.push({
+          label: cp.label,
+          icon: cp.icon,
+          color: cp.color,
+          items: items as { title: string; detail: string; accent: string }[],
+        })
       }
-    })
-    .filter((pair): pair is { q: QuizQuestion; a: Answer } => pair !== null)
+    }
+
+    return groups
+  }
+
+  const reviewGroups = buildReview()
 
   return (
     <PageShell
@@ -462,40 +541,32 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
                 transition={{ duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="px-5 pb-5 space-y-2 border-t border-zinc-800 pt-4">
-                  {answerPairs.map(({ q, a }) => {
-                    const meta = CHOICE_META[a.choice]
-                    const work = getWorkByChoice(q, a.choice)
-                    return (
-                      <div
-                        key={q.director.id}
-                        className="w-full flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-800/40 text-left"
-                      >
-                        <div
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0"
-                          style={{ backgroundColor: q.director.color + '20', color: q.director.color }}
-                        >
-                          {q.director.name.charAt(0)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                            <span className="text-sm font-semibold leading-tight text-white truncate">
-                              {q.director.name}
-                            </span>
-                            <span className={cn('text-xs flex items-center gap-1 leading-tight shrink-0', meta.color)}>
-                              {meta.icon}
-                              {meta.label}
-                            </span>
-                          </div>
-                          {work && (
-                            <div className="text-xs text-zinc-500 mt-0.5 truncate">
-                              《{work.title}》（{work.year}）
-                            </div>
-                          )}
-                        </div>
+                <div className="px-5 pb-5 border-t border-zinc-800 pt-4 space-y-5">
+                  {reviewGroups.map((group) => (
+                    <div key={group.label}>
+                      <div className="flex items-center gap-1.5 mb-2.5">
+                        <span className={cn('text-xs', group.color)}>{group.icon}</span>
+                        <span className={cn('text-xs font-semibold', group.color)}>
+                          {group.label}（{group.items.length} 题）
+                        </span>
                       </div>
-                    )
-                  })}
+                      <div className="space-y-1.5">
+                        {group.items.map((item, i) => (
+                          <div
+                            key={i}
+                            className="w-full px-3 py-2 rounded-xl bg-zinc-800/30"
+                          >
+                            <div className="text-xs text-zinc-300 font-medium leading-snug">
+                              {item.title}
+                            </div>
+                            <div className={cn('text-[11px] mt-0.5 leading-snug', item.accent)}>
+                              {item.detail}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -542,6 +613,7 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
         type={type}
         matchScore={matchScore}
         knownCount={knownCount}
+        totalQuestions={totalQuestions}
       />
     </PageShell>
   )

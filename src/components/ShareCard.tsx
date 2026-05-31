@@ -11,9 +11,10 @@ interface ShareCardProps {
   type: DBTIType
   matchScore: number
   knownCount: number
+  totalQuestions: number
 }
 
-export function ShareCard({ open, onClose, type, matchScore, knownCount }: ShareCardProps) {
+export function ShareCard({ open, onClose, type, matchScore, knownCount, totalQuestions }: ShareCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // 生成分享图片
@@ -78,14 +79,14 @@ export function ShareCard({ open, onClose, type, matchScore, knownCount }: Share
     ctx.fillText(`${matchScore}%`, 30, 280)
     ctx.fillStyle = '#71717a'
     ctx.font = '12px system-ui, sans-serif'
-    ctx.fillText('匹配度', 30, 298)
+    ctx.fillText('置信度', 30, 298)
 
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 28px system-ui, sans-serif'
-    ctx.fillText(`${knownCount}/10`, 130, 280)
+    ctx.fillText(`${knownCount}/${totalQuestions}`, 130, 280)
     ctx.fillStyle = '#71717a'
     ctx.font = '12px system-ui, sans-serif'
-    ctx.fillText('认识导演', 130, 298)
+    ctx.fillText('有效回答', 130, 298)
 
     // 精神导演
     ctx.fillStyle = '#52525b'
