@@ -17,6 +17,17 @@ interface StoredResultEntry {
   aiAnalysis?: AIAnalysis | null
 }
 
+function createResultId(): string {
+  const uuid =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
+        ? Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, '0')).join('')
+        : Math.random().toString(36).slice(2)
+
+  return `${Date.now()}-${uuid}`
+}
+
 export default function App() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [directors, setDirectors] = useState<Director[]>([])
@@ -63,7 +74,7 @@ export default function App() {
       questions,
       answers,
       aiAnalysis,
-      resultId: `${Date.now()}-${crypto.randomUUID()}`,
+      resultId: createResultId(),
     })
     setPhase('result')
   }
