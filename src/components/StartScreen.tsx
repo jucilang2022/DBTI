@@ -64,7 +64,7 @@ export function StartScreen({ onStart, onHistory, onExplore }: StartScreenProps)
             transition={{ delay: 0.3, duration: 0.5 }}
           >
             <Film className="w-4 h-4" />
-            导演版人格测试
+            电影人格测试
           </motion.div>
 
           <div className="space-y-5">
@@ -76,12 +76,12 @@ export function StartScreen({ onStart, onHistory, onExplore }: StartScreenProps)
 
             <div className="space-y-4">
               <p className="text-lg text-zinc-400 max-w-md mx-auto leading-relaxed">
-                10 道题，找到你的导演人格
+                16 道题，解码你的电影人格
               </p>
 
               <p className="text-sm text-zinc-500 max-w-sm mx-auto leading-relaxed">
-                有些电影你一眼认出，有些导演你还没遇见。<br />
-                你的选择，慢慢拼出一份专属于你的画像。
+                导演对比、价值取向、观影习惯、审美判断——<br />
+                你的每一次选择，都在拼出独属于你的银幕画像。
               </p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export function StartScreen({ onStart, onHistory, onExplore }: StartScreenProps)
           </motion.button>
 
           <p className="text-xs text-zinc-600">
-            约需 1 分钟 · 共 10 题
+            约需 3 分钟 · 共 16 题，含 AI 人格解析
           </p>
         </div>
 

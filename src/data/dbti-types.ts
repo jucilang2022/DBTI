@@ -242,6 +242,22 @@ export const DBTI_TYPES: DBTIType[] = [
     color: '#881337',
     rarity: 'uncommon',
   },
+
+  // ===== 边界情况：几乎没看过 =====
+  {
+    id: 'NEWBIE',
+    name: '影坛白纸',
+    nameEn: 'Cinema Rookie',
+    tags: [],
+    tagline: '勇敢承认自己没看过，也是一种态度。',
+    description:
+      '你在这 16 道题里几乎都没看过/答不上来。说实话，你能坚持做完已经很了不起了！你的电影知识储备像一张白纸——但也正因为是白纸，你可以画出任何东西。建议收藏这个测试，刷完 50 部经典再回来测一次。',
+    spiritDirector: '（建议从张艺谋开始补起）',
+    quote: '"这个导演……是拍什么的来着？"',
+    recommendations: ['《霸王别姬》', '《千与千寻》', '《肖申克的救赎》', '《功夫》'],
+    color: '#6b7280',
+    rarity: 'common',
+  },
 ]
 
 /**
