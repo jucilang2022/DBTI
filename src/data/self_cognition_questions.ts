@@ -1,8 +1,8 @@
 import type { ChoiceQuestion } from '@/types'
 
 /**
- * 9 道自我认知题 — 反映用户对豆瓣评分生态和自身影迷身份的认知。
- * 选项数 3 个，直接映射人格维度。
+ * 15 道自我认知题 — 反映用户对豆瓣评分生态和自身影迷身份的认知。
+ * 选项数 3~5 个，直接映射人格维度。
  */
 export const selfCognitionQuestions: ChoiceQuestion[] = [
   {
@@ -93,6 +93,72 @@ export const selfCognitionQuestions: ChoiceQuestion[] = [
       { text: '依然去看，相信导演的水平。', dims: { g: 1, a: 1 } },
       { text: '等口碑稳定了再说，不冒险。', dims: { c: 1, o: 1 } },
       { text: '第一时间看，作为迷影必须要见证全过程。', dims: { m: 1, n: 1 } },
+    ],
+  },
+  {
+    id: 'self_10',
+    type: 'self_cognition',
+    question: '翻出自己三年前给某部电影的打分，你觉得大概率会？',
+    options: [
+      { text: '基本认同，审美体系已经很稳定了。', dims: { c: 1, o: 1 } },
+      { text: '可能会觉得当时打高了，年轻不懂事。', dims: { a: 1, n: 1 } },
+      { text: '可能觉得当时打低了，当时没看懂。', dims: { m: 1, g: 1 } },
+      { text: '评分不重要，感受是流动的，变了也没关系。', dims: { s: 1, p: 1 } },
+    ],
+  },
+  {
+    id: 'self_11',
+    type: 'self_cognition',
+    question: '豆瓣上很多人给晦涩的文艺片打高分，你觉得这是？',
+    options: [
+      { text: '真实的审美偏好，深度内容值得高评价。', dims: { n: 1, m: 1 } },
+      { text: '一种圈层符号，打分背后有身份焦虑。', dims: { c: 1, o: 1 } },
+      { text: '正常现象，任何平台都有自己的用户画像。', dims: { p: 1, s: 1 } },
+      { text: '无所谓，别人打多少分关我什么事。', dims: { g: 1, a: 1 } },
+    ],
+  },
+  {
+    id: 'self_12',
+    type: 'self_cognition',
+    question: '豆瓣十分制，你觉得8分和9分的差距主要在于？',
+    options: [
+      { text: '工业水准和完成度的差距，差一分就是差一档。', dims: { c: 1, o: 1 } },
+      { text: '个人情感共鸣度的问题，无法客观衡量。', dims: { g: 1, a: 1 } },
+      { text: '传播度和大众认可度的差距。', dims: { p: 1, s: 1 } },
+      { text: '很难说，有的8分片比9分片更打动我。', dims: { n: 1, m: 1 } },
+    ],
+  },
+  {
+    id: 'self_13',
+    type: 'self_cognition',
+    question: '如果有人用"观影量不够"来否定你的电影品味，你？',
+    options: [
+      { text: '承认自己确实看得不多，但品味不需要量来证明。', dims: { s: 1, p: 1 } },
+      { text: '不服气，阅片量和审美能力没有直接关系。', dims: { g: 1, a: 1 } },
+      { text: '默默接受，然后回去补片，用行动证明。', dims: { m: 1, n: 1 } },
+      { text: '看情况，如果对方确实比我资深我认，否则免谈。', dims: { c: 1, o: 1 } },
+    ],
+  },
+  {
+    id: 'self_14',
+    type: 'self_cognition',
+    question: '你觉得"公平评分"这件事在电影领域可能吗？',
+    options: [
+      { text: '不可能，评分本质就是主观偏好的加总。', dims: { n: 1, a: 1 } },
+      { text: '大致可能，评分体现了多数人的共识。', dims: { c: 1, p: 1 } },
+      { text: '没必要追求公平，评分只是参考工具。', dims: { s: 1, o: 1 } },
+      { text: '可以接近公平，但要区分类型和受众分层打分。', dims: { m: 1, g: 1 } },
+    ],
+  },
+  {
+    id: 'self_15',
+    type: 'self_cognition',
+    question: '你更倾向于相信资深的影评人还是豆瓣普通用户的评分？',
+    options: [
+      { text: '影评人，他们能从专业角度分析我不一定看出来的东西。', dims: { m: 1, n: 1 } },
+      { text: '普通用户，他们的感受更真实，不装不端。', dims: { p: 1, s: 1 } },
+      { text: '都不太信，我只看自己的真实感受。', dims: { g: 1, a: 1 } },
+      { text: '结合来看，影评看分析，大众看热度。', dims: { c: 1, o: 1 } },
     ],
   },
 ]

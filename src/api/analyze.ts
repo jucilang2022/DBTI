@@ -38,7 +38,6 @@ export async function analyzeWithAI(
   // 本地算法兜底
   const localResult = analyzeQuiz(
     answers,
-    directors,
     compareQuestions,
     valueQuestions,
     scenarioQuestions,

@@ -1,7 +1,7 @@
 import type { DirectorCompareQuestion } from '@/types'
 
 /**
- * 10 组导演对比题 — 每组 4 位风格差异鲜明的导演。
+ * 14 组导演对比题 — 每组 4 位风格差异鲜明的导演。
  * 每个选项携带维度映射，直接贡献维分。
  */
 export const compareQuestions: DirectorCompareQuestion[] = [
@@ -342,6 +342,142 @@ export const compareQuestions: DirectorCompareQuestion[] = [
         nameEn: 'Roman Polanski',
         style: '黑色幽闭，道德迷宫里的绝望喘息。',
         dims: { g: 1, a: 1 },
+      },
+    ],
+  },
+  {
+    id: 'dc_11',
+    question: '在电影语言的探索上，谁的道路更让你心驰神往？',
+    directors: [
+      {
+        id: 'michael-haneke',
+        name: '哈内克',
+        nameEn: 'Michael Haneke',
+        style: '冷峻疏离，每一步都让观众成为共犯。',
+        dims: { g: 1, a: 1 },
+      },
+      {
+        id: 'ridley-scott',
+        name: '雷德利·斯科特',
+        nameEn: 'Ridley Scott',
+        style: '视觉史诗，世界构建的顶级工匠。',
+        dims: { p: 1, c: 1 },
+      },
+      {
+        id: 'aki-kaurismaki',
+        name: '阿基·考里斯马基',
+        nameEn: 'Aki Kaurismäki',
+        style: '极简冷幽默，沉默深处的人性温度。',
+        dims: { n: 1, o: 1 },
+      },
+      {
+        id: 'paul-thomas-anderson',
+        name: '保罗·托马斯·安德森',
+        nameEn: 'Paul Thomas Anderson',
+        style: '野心叙事，人物情感的纵深挖掘。',
+        dims: { m: 1, a: 1 },
+      },
+    ],
+  },
+  {
+    id: 'dc_12',
+    question: '哪位导演的视觉风格更能定义你对电影的审美？',
+    directors: [
+      {
+        id: 'coen-brothers',
+        name: '科恩兄弟',
+        nameEn: 'Coen Brothers',
+        style: '黑色荒诞，命运无常的冷峻嬉闹。',
+        dims: { g: 1, a: 1 },
+      },
+      {
+        id: 'claire-denis',
+        name: '克莱尔·德尼',
+        nameEn: 'Claire Denis',
+        style: '感官电影，欲望与记忆的身体书写。',
+        dims: { n: 1, a: 1 },
+      },
+      {
+        id: 'jacques-audiard',
+        name: '雅克·欧迪亚',
+        nameEn: 'Jacques Audiard',
+        style: '底层写实，粗粝中绽放的人性光芒。',
+        dims: { n: 1, o: 1 },
+      },
+      {
+        id: 'jean-pierre-melville',
+        name: '让-皮埃尔·梅尔维尔',
+        nameEn: 'Jean-Pierre Melville',
+        style: '冷色调极简，黑帮片的沉默圣徒美学。',
+        dims: { c: 1, o: 1 },
+      },
+    ],
+  },
+  {
+    id: 'dc_13',
+    question: '宏大与微小之间，你更偏爱哪位导演的镜头重量？',
+    directors: [
+      {
+        id: 'nicolas-winding-refn',
+        name: '尼古拉斯·温丁·雷弗恩',
+        nameEn: 'Nicolas Winding Refn',
+        style: '霓虹邪典，形式本身就是全部内涵。',
+        dims: { g: 1, a: 1 },
+      },
+      {
+        id: 'david-lean',
+        name: '大卫·里恩',
+        nameEn: 'David Lean',
+        style: '史诗正典，个人在历史洪流中的悲壮。',
+        dims: { p: 1, o: 1 },
+      },
+      {
+        id: 'fei-mu',
+        name: '费穆',
+        nameEn: 'Fei Mu',
+        style: '东方诗意，含蓄留白中的伦理重量。',
+        dims: { n: 1, o: 1 },
+      },
+      {
+        id: 'anouk-aimee',
+        name: '阿努克·艾梅',
+        nameEn: 'Anouk Aimée',
+        style: '散文电影，女性感知与时间的绵延。',
+        dims: { n: 1, a: 1 },
+      },
+    ],
+  },
+  {
+    id: 'dc_14',
+    question: '以下四位导演，谁最让你感到"电影是另一种语言"？',
+    directors: [
+      {
+        id: 'alfred-hitchcock',
+        name: '希区柯克',
+        nameEn: 'Alfred Hitchcock',
+        style: '悬疑经典，观众心理的绝对操控者。',
+        dims: { p: 1, c: 1 },
+      },
+      {
+        id: 'luis-bunuel',
+        name: '布努埃尔',
+        nameEn: 'Luis Buñuel',
+        style: '超现实讽刺，梦境与资产阶级的锋利解剖。',
+        dims: { n: 1, a: 1 },
+      },
+      {
+        id: 'roy-andersson',
+        name: '罗伊·安德森',
+        nameEn: 'Roy Andersson',
+        style: '存在主义冷幽默，固定镜头中的荒诞人间。',
+        dims: { n: 1, g: 1 },
+      },
+      {
+        id: 'kenji-mizoguchi',
+        name: '沟口健二',
+        nameEn: 'Kenji Mizoguchi',
+        style: '古典长镜，日本女性苦难的幽婉画卷。',
+        dims: { c: 1, o: 1 },
       },
     ],
   },

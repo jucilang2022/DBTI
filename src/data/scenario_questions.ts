@@ -1,7 +1,7 @@
 import type { ChoiceQuestion } from '@/types'
 
 /**
- * 12 道情景题 — 模拟真实的观影场景选择。
+ * 18 道情景题 — 模拟真实的观影场景选择。
  * 每道题的选项直接映射到人格维度。
  */
 export const scenarioQuestions: ChoiceQuestion[] = [
@@ -123,6 +123,72 @@ export const scenarioQuestions: ChoiceQuestion[] = [
       { text: '礼貌看完，可能发现意外惊喜。', dims: { o: 1, n: 1 } },
       { text: '十分钟后偷偷看手机。', dims: { s: 1, p: 1 } },
       { text: '兴奋起来，这是我最喜欢的类型。', dims: { m: 1, a: 1 } },
+    ],
+  },
+  {
+    id: 'sc_13',
+    type: 'scenario',
+    question: '你在视频网站看一部老片，弹幕疯狂刷"前方高能"，你会？',
+    options: [
+      { text: '马上关掉弹幕，不想被任何暗示干扰。', dims: { a: 1, n: 1 } },
+      { text: '开着弹幕，大家一起反应才有氛围。', dims: { p: 1, g: 1 } },
+      { text: '把弹幕调成半透明，不影响画面但能看梗。', dims: { o: 1, s: 1 } },
+      { text: '专心看画面，弹幕只会在结束后回看。', dims: { m: 1, c: 1 } },
+    ],
+  },
+  {
+    id: 'sc_14',
+    type: 'scenario',
+    question: '电影院里旁边的人一直大声讨论剧情，你会？',
+    options: [
+      { text: '直接制止，影院礼仪不能忍。', dims: { c: 1, o: 1 } },
+      { text: '默默忍受到散场，不想起冲突。', dims: { s: 1, p: 1 } },
+      { text: '换座位远离噪音源。', dims: { a: 1, n: 1 } },
+      { text: '内心暴躁但表面不动声色，散场后发朋友圈吐槽。', dims: { g: 1, a: 1 } },
+    ],
+  },
+  {
+    id: 'sc_15',
+    type: 'scenario',
+    question: '你加入了一个每月一次的电影俱乐部，首次聚会的片单你希望？',
+    options: [
+      { text: '选一部公认的经典，大家都有得聊。', dims: { c: 1, p: 1 } },
+      { text: '大胆推荐一部冷门神作，测试大家的接受度。', dims: { n: 1, m: 1 } },
+      { text: '选一部争议大的片子，方便展开讨论碰撞。', dims: { a: 1, g: 1 } },
+      { text: '先看看别人推荐什么，下次再做主。', dims: { s: 1, o: 1 } },
+    ],
+  },
+  {
+    id: 'sc_16',
+    type: 'scenario',
+    question: '朋友说看不懂你最喜欢的一部电影，你会？',
+    options: [
+      { text: '耐心解释电影的主题和象征，希望能让他理解我的感动。', dims: { m: 1, c: 1 } },
+      { text: '理解，这片本来就不是每个人的菜。', dims: { a: 1, o: 1 } },
+      { text: '推荐另一部更容易入口但同样风格的作品。', dims: { p: 1, s: 1 } },
+      { text: '不再多解释，享受只有自己能懂的孤独感。', dims: { n: 1, g: 1 } },
+    ],
+  },
+  {
+    id: 'sc_17',
+    type: 'scenario',
+    question: '短视频上刷到一部老电影的解说版，你从没看过原片，你会？',
+    options: [
+      { text: '看完解说就当看过了，节约时间。', dims: { s: 1, p: 1 } },
+      { text: '立刻关掉去找原片看，解说会毁了第一体验。', dims: { a: 1, n: 1 } },
+      { text: '看完解说后决定值不值得找原片看。', dims: { g: 1, o: 1 } },
+      { text: '从来不看电影解说，那是对电影的不尊重。', dims: { m: 1, c: 1 } },
+    ],
+  },
+  {
+    id: 'sc_18',
+    type: 'scenario',
+    question: '你熬夜看完一部豆瓣8.5以上的神作却完全没有被打动，你会？',
+    options: [
+      { text: '怀疑自己是不是没看懂，重新看一遍找感觉。', dims: { m: 1, c: 1 } },
+      { text: '接受自己和高分片不合拍，每个人都有盲区。', dims: { a: 1, o: 1 } },
+      { text: '给差评，不能理解为什么大家这么吹。', dims: { g: 1, p: 1 } },
+      { text: '放在一边，过段时间重看也许感受不同。', dims: { n: 1, s: 1 } },
     ],
   },
 ]
