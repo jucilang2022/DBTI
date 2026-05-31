@@ -107,7 +107,7 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<QuizAnswer[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisPhase, setAnalysisPhase] = useState<'local' | 'ai' | 'done'>('local')
+  const [analysisPhase, setAnalysisPhase] = useState<'loading' | 'ai' | 'done'>('loading')
   const [phraseIndex, setPhraseIndex] = useState(0)
 
   const currentItem = items[currentIndex]
@@ -170,33 +170,34 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
     const timer = setInterval(() => {
       setPhraseIndex((i) => {
         if (analysisPhase === 'ai' && i < 4) return 4
-        if (analysisPhase === 'local' && i >= 4) return 0
+        if (analysisPhase === 'loading' && i >= 4) return 0
         return (i + 1) % ANALYZING_PHRASES.length
       })
     }, 600)
 
-    const localDone = setTimeout(async () => {
+    setTimeout(async () => {
       setAnalysisPhase('ai')
 
-      setTimeout(async () => {
-        const { result, aiAnalysis } = await analyzeWithAI(
-          quizAnswers,
-          directors,
-          allCompareQuestions,
-          allValueQuestions,
-          allScenarioQuestions,
-          allSelfCognitionQuestions,
-        )
+      // 给 AI 最多 12 秒超时保护
+      const timeoutId = setTimeout(() => {
         setAnalysisPhase('done')
-        setTimeout(() => {
-          onComplete(result, questions, quizAnswers, aiAnalysis)
-        }, 500)
-      }, 4000)
-    }, 1200)
+      }, 12000)
+
+      const { result, aiAnalysis } = await analyzeWithAI(
+        quizAnswers,
+        questions,
+      )
+
+      clearTimeout(timeoutId)
+
+      setAnalysisPhase('done')
+      setTimeout(() => {
+        onComplete(result, questions, quizAnswers, aiAnalysis)
+      }, 300)
+    }, 800)
 
     return () => {
       clearInterval(timer)
-      clearTimeout(localDone)
     }
   }, [isAnalyzing]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -318,7 +319,7 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
           {ANALYZING_PHRASES[phraseIndex % ANALYZING_PHRASES.length]}
         </motion.p>
         <p className="text-xs text-zinc-600 mt-2">
-          {analysisPhase === 'local' ? '本地算法分析中...' : 'AI 正在生成个性化锐评...'}
+          {analysisPhase === 'loading' ? 'AI 正在思考你的电影人格...' : 'AI 正在生成个性化锐评...'}
         </p>
       </motion.div>
     </PageShell>

@@ -1,196 +1,193 @@
-import type { QuizAnswer, Director, ChoiceQuestion, DirectorCompareQuestion } from '@/types'
+import type { QuizAnswer, QuizQuestion, AnswerChoice } from '@/types'
 import { DBTI_TYPES } from '@/data/dbti-types'
 import { analyzeQuiz } from '@/data/quiz-analyzer'
+import { compareQuestions } from '@/data/director_compare_questions'
+import { valueQuestions } from '@/data/value-questions'
+import { scenarioQuestions } from '@/data/scenario_questions'
+import { selfCognitionQuestions } from '@/data/self_cognition_questions'
 import type { QuizResult, AIAnalysis } from '@/types'
 
-function getChoiceLabel(choice: string): string {
-  switch (choice) {
-    case 'famous':
-      return '代表作'
-    case 'controversial':
-      return '争议之作'
-    case 'hidden':
-      return '特色佳作'
-    case 'other':
-      return '其他作品'
-    case 'unknown':
-      return '没看过'
-    default:
-      return choice
+/**
+ * 为 AI 构建完整的答题记录（含题面、选项文本、用户选择）
+ */
+function buildQuestionPayload(
+  quizAnswers: QuizAnswer[],
+  directorQuestions: QuizQuestion[],
+): unknown[] {
+  const payload: unknown[] = []
+
+  for (const answer of quizAnswers) {
+    switch (answer.questionType) {
+      case 'director_work': {
+        const q = directorQuestions.find((dq) => dq.director.id === answer.directorId)
+        if (!q) continue
+        const d = q.director
+        const choiceMap: Record<AnswerChoice, string> = {
+          famous: `代表作：⭐《${d.famousWork.title}》${d.famousWork.year} —— ${d.famousWork.description}`,
+          controversial: `争议之作：🎯《${d.controversialWork.title}》${d.controversialWork.year} —— ${d.controversialWork.description}`,
+          hidden: `特色佳作：💎《${d.hiddenGem.title}》${d.hiddenGem.year} —— ${d.hiddenGem.description}`,
+          other: '其他作品：🎬 有自己更喜欢的作品',
+          unknown: '没看过任何一部：❓ 对此导演不太熟悉',
+        }
+        const options = q.order.map((c) => choiceMap[c])
+        payload.push({
+          type: '导演作品',
+          question: `从 ${d.name}（${d.nameEn}）的作品中选出你最喜欢的一部？`,
+          options,
+          selected: q.order.indexOf(answer.choice ?? 'unknown'),
+        })
+        break
+      }
+      case 'director_compare': {
+        const q = compareQuestions.find((cq) => cq.id === answer.questionId)
+        if (!q) continue
+        const options = q.directors.map((d) => `${d.name}（${d.nameEn}）—— ${d.style}`)
+        payload.push({
+          type: '导演对比',
+          question: q.question,
+          options,
+          selected: answer.selectedIndex,
+        })
+        break
+      }
+      case 'value': {
+        const q = valueQuestions.find((vq) => vq.id === answer.questionId)
+        if (!q) continue
+        payload.push({
+          type: '价值观选择',
+          question: q.question,
+          options: q.options.map((o) => o.text),
+          selected: answer.selectedIndex,
+        })
+        break
+      }
+      case 'scenario': {
+        const q = scenarioQuestions.find((sq) => sq.id === answer.questionId)
+        if (!q) continue
+        payload.push({
+          type: '情景选择',
+          question: q.question,
+          options: q.options.map((o) => o.text),
+          selected: answer.selectedIndex,
+        })
+        break
+      }
+      case 'self_cognition': {
+        const q = selfCognitionQuestions.find((scq) => scq.id === answer.questionId)
+        if (!q) continue
+        payload.push({
+          type: '自我认知',
+          question: q.question,
+          options: q.options.map((o) => o.text),
+          selected: answer.selectedIndex,
+        })
+        break
+      }
+    }
+  }
+
+  return payload
+}
+
+interface AIResponse {
+  analysis?: {
+    typeId: string
+    matchScore: number
+    matchReason: string
+    roast: string
+    recommendations: string[]
   }
 }
 
 /**
- * 调用 AI 分析用户答题结果。
+ * 优先调 AI 判断类型+生成内容，失败则走本地算法兜底。
  *
- * 1. 先走本地算法得到基础结果
- * 2. 同时尝试调 AI API 获取个性化分析
- * 3. AI 成功则展示个性化文案；类型和四维结果始终以本地算法为准
+ * 返回：
+ *   result — 最终的结果（AI 或本地）
+ *   aiAnalysis — AI 生成的内容（如果有）
+ *   fromAI — 结果是否来自 AI
  */
 export async function analyzeWithAI(
-  answers: QuizAnswer[],
-  directors: Director[],
-  compareQuestions: DirectorCompareQuestion[],
-  valueQuestions: ChoiceQuestion[],
-  scenarioQuestions: ChoiceQuestion[],
-  selfCognitionQuestions: ChoiceQuestion[],
-): Promise<{ result: QuizResult; aiAnalysis: AIAnalysis | null }> {
-  // 本地算法兜底
-  const localResult = analyzeQuiz(
-    answers,
+  quizAnswers: QuizAnswer[],
+  directorQuestions: QuizQuestion[],
+): Promise<{
+  result: QuizResult
+  aiAnalysis: AIAnalysis | null
+  fromAI: boolean
+}> {
+  // 1. 尝试 AI
+  try {
+    const questionPayload = buildQuestionPayload(quizAnswers, directorQuestions)
+    const typesPayload = DBTI_TYPES.map((t) => ({
+      id: t.id,
+      name: t.name,
+      tagline: t.tagline,
+      tags: t.tags,
+      spiritDirector: t.spiritDirector,
+      description: t.description,
+      quote: t.quote,
+    }))
+
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        questionAnswers: questionPayload,
+        types: typesPayload,
+      }),
+    })
+
+    if (!response.ok) {
+      console.warn('AI analysis unavailable, falling back to local')
+      return { result: runLocal(quizAnswers), aiAnalysis: null, fromAI: false }
+    }
+
+    const data = (await response.json()) as AIResponse
+    if (!data.analysis?.typeId) {
+      return { result: runLocal(quizAnswers), aiAnalysis: null, fromAI: false }
+    }
+
+    // 2. AI 成功 — 构造结果
+    const analysis = data.analysis
+    const matchedType = DBTI_TYPES.find((t) => t.id === analysis.typeId)
+    if (!matchedType) {
+      return { result: runLocal(quizAnswers), aiAnalysis: null, fromAI: false }
+    }
+
+    const localFallback = runLocal(quizAnswers)
+
+    const aiResult: QuizResult = {
+      type: matchedType,
+      typeCode: analysis.typeId,
+      dimensions: localFallback.dimensions,
+      choiceCounts: localFallback.choiceCounts,
+      favoriteDirector: localFallback.favoriteDirector,
+      knownCount: localFallback.knownCount,
+      matchScore: Math.min(100, analysis.matchScore ?? localFallback.matchScore),
+    }
+
+    const aiAnalysis: AIAnalysis = {
+      typeId: analysis.typeId,
+      matchScore: aiResult.matchScore,
+      matchReason: analysis.matchReason,
+      roast: analysis.roast,
+      recommendations: analysis.recommendations ?? [],
+    }
+
+    return { result: aiResult, aiAnalysis, fromAI: true }
+  } catch (err) {
+    console.warn('AI analysis error:', err)
+    return { result: runLocal(quizAnswers), aiAnalysis: null, fromAI: false }
+  }
+}
+
+/** 本地算法兜底 */
+function runLocal(quizAnswers: QuizAnswer[]): QuizResult {
+  return analyzeQuiz(
+    quizAnswers,
     compareQuestions,
     valueQuestions,
     scenarioQuestions,
     selfCognitionQuestions,
   )
-
-  // 为 AI 构建分析数据 - 筛选 director_work 类型的回答
-  const answersForAnalysis = answers
-    .filter((a) => a.questionType === 'director_work')
-    .map((answer, index) => {
-      const director = directors.find((item) => item.id === answer.directorId)
-      const selectedWork = director && answer.choice
-        ? getWorkByChoice(director, answer.choice)
-        : null
-
-      return {
-        index: index + 1,
-        directorId: answer.directorId,
-        directorName: director?.name ?? answer.directorId,
-        choice: answer.choice ?? 'unknown',
-        choiceLabel: getChoiceLabel(answer.choice ?? 'unknown'),
-        selectedWork: selectedWork
-          ? {
-              title: selectedWork.title,
-              year: selectedWork.year,
-              description: selectedWork.description,
-              vibes: selectedWork.vibes,
-            }
-          : null,
-        note:
-          answer.choice === 'other'
-            ? '用户选择了其他作品，表示有自己的偏好；这不是没看过，也不是某部固定电影。'
-            : answer.choice === 'unknown'
-              ? '用户选择了没看过任何一部。'
-              : undefined,
-      }
-    })
-
-  // 为 AI 构建价值观题分析数据
-  const valueAnswersForAnalysis = answers
-    .filter((a) => a.questionType === 'value')
-    .map((answer, index) => {
-      const q = valueQuestions.find((vq) => vq.id === answer.questionId)
-      const selectedOption = q?.options[answer.selectedIndex]
-      return {
-        index: index + 1,
-        type: '价值观题',
-        question: q?.question ?? answer.questionId,
-        selectedOption: selectedOption?.text ?? `选项 ${answer.selectedIndex}`,
-      }
-    })
-
-  // 为 AI 构建情景题和认知题分析数据
-  const scenarioCognitionForAnalysis = answers
-    .filter((a) => a.questionType === 'scenario' || a.questionType === 'self_cognition')
-    .map((answer, index) => {
-      const pool = answer.questionType === 'scenario' ? scenarioQuestions : selfCognitionQuestions
-      const q = pool.find((sq) => sq.id === answer.questionId)
-      const selectedOption = q?.options[answer.selectedIndex]
-      return {
-        index: index + 1,
-        type: answer.questionType === 'scenario' ? '情景题' : '自我认知题',
-        question: q?.question ?? answer.questionId,
-        selectedOption: selectedOption?.text ?? `选项 ${answer.selectedIndex}`,
-      }
-    })
-
-  // 为 AI 构建导演对比题分析数据
-  const compareForAnalysis = answers
-    .filter((a) => a.questionType === 'director_compare')
-    .map((answer, index) => {
-      const q = compareQuestions.find((cq) => cq.id === answer.questionId)
-      const selectedDirector = q?.directors[answer.selectedIndex]
-      return {
-        index: index + 1,
-        type: '导演对比题',
-        question: q?.question ?? answer.questionId,
-        selectedOption: selectedDirector
-          ? `${selectedDirector.name}（${selectedDirector.style}）`
-          : `导演 ${answer.selectedIndex}`,
-      }
-    })
-
-  const directorsForAnalysis = directors.map((director) => ({
-    id: director.id,
-    name: director.name,
-    nameEn: director.nameEn,
-    bio: director.bio,
-    color: director.color,
-    famousWork: director.famousWork,
-    controversialWork: director.controversialWork,
-    hiddenGem: director.hiddenGem,
-  }))
-
-  try {
-    const response = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        answers: answersForAnalysis,
-        valueAnswers: valueAnswersForAnalysis,
-        directors: directorsForAnalysis,
-        types: DBTI_TYPES,
-        localResult: {
-          typeId: localResult.type.id,
-          typeName: localResult.type.name,
-          typeCode: localResult.typeCode,
-          matchScore: localResult.matchScore,
-          dimensions: localResult.dimensions,
-          choiceCounts: localResult.choiceCounts,
-          knownCount: localResult.knownCount,
-          valueQuestionCount: valueAnswersForAnalysis.length,
-        },
-        // 新增题型数据（供 AI 参考）
-        scenarioCognitionAnswers: scenarioCognitionForAnalysis,
-        compareAnswers: compareForAnalysis,
-      }),
-    })
-
-    if (!response.ok) {
-      const err = await response.json()
-      console.warn('AI analysis unavailable:', err.error || err.message)
-      return { result: localResult, aiAnalysis: null }
-    }
-
-    const data = await response.json()
-
-    if (!data.success || !data.analysis) {
-      return { result: localResult, aiAnalysis: null }
-    }
-
-    const analysis = data.analysis as AIAnalysis
-
-    if (analysis.typeId !== localResult.type.id) {
-      console.warn('AI type mismatch, keeping local result:', {
-        localTypeId: localResult.type.id,
-        aiTypeId: analysis.typeId,
-      })
-      return { result: localResult, aiAnalysis: null }
-    }
-
-    return { result: localResult, aiAnalysis: analysis }
-  } catch (err) {
-    console.warn('AI analysis error:', err)
-    return { result: localResult, aiAnalysis: null }
-  }
-}
-
-function getWorkByChoice(director: Director, choice: string) {
-  switch (choice) {
-    case 'famous': return director.famousWork
-    case 'controversial': return director.controversialWork
-    case 'hidden': return director.hiddenGem
-    default: return null
-  }
 }
