@@ -213,6 +213,7 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
           返回首页
         </button>
 
+        <div className="min-h-[420px] relative">
         <AnimatePresence mode="wait">
           {currentItem.kind === 'director_work' ? (
             <QuestionCard
@@ -257,6 +258,7 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
             />
           )}
         </AnimatePresence>
+        </div>
       </PageShell>
     )
   }
