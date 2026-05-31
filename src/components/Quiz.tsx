@@ -5,6 +5,7 @@ import type { Director, AnswerChoice, QuizQuestion, AIAnalysis, QuizAnswer } fro
 import { pickRandom, shuffle } from '@/lib/utils'
 import { QuestionCard } from './QuestionCard'
 import { DirectorCompareCard } from './DirectorCompareCard'
+import { ValueCard } from './ValueCard'
 import { ScenarioCard } from './ScenarioCard'
 import { SelfCognitionCard } from './SelfCognitionCard'
 import { analyzeWithAI } from '@/api/analyze'
@@ -230,7 +231,7 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
               onSelect={handleSelect}
             />
           ) : currentItem.kind === 'value' ? (
-            <ScenarioCard
+            <ValueCard
               key={`v-${currentItem.question.id}`}
               question={currentItem.question}
               questionIndex={currentIndex}

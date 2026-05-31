@@ -1,4 +1,4 @@
-import type { QuizAnswer, Director, ChoiceQuestion, DirectorCompareQuestion, QuizResult } from '@/types'
+import type { Director, QuizAnswer, ChoiceQuestion, DirectorCompareQuestion, QuizResult } from '@/types'
 import { DBTI_TYPES } from './dbti-types'
 
 /**
@@ -23,7 +23,6 @@ export function analyzeQuiz(
   /* ---- 2. 处理各题型 ---- */
   let knownCount = 0
   let lastKnownName = ''
-  let earliestYearPicks = 0
   const choiceCounts: Record<string, number> = {
     famous: 0, controversial: 0, hidden: 0, other: 0, unknown: 0,
   }
@@ -58,16 +57,6 @@ export function analyzeQuiz(
           case 'other':
             dims.a += 1; dims.m += 1
             break
-        }
-
-        const work = getWorkByChoice(director, c)
-        if (work) {
-          const earliestYear = Math.min(
-            director.famousWork.year,
-            director.controversialWork.year,
-            director.hiddenGem.year,
-          )
-          if (work.year === earliestYear) earliestYearPicks++
         }
         break
       }
@@ -159,7 +148,6 @@ export function analyzeQuiz(
     favoriteDirector: lastKnownName || '未知',
     knownCount,
     matchScore,
-    earliestYearPicks,
   }
 }
 
@@ -170,15 +158,6 @@ function computeTypeCode(dims: Record<string, number>): string {
   const d3 = dims.o >= dims.a ? 'O' : 'A'
   const d4 = dims.m >= dims.s ? 'M' : 'S'
   return `${d1}${d2}${d3}${d4}`
-}
-
-function getWorkByChoice(director: Director, choice: string) {
-  switch (choice) {
-    case 'famous': return director.famousWork
-    case 'controversial': return director.controversialWork
-    case 'hidden': return director.hiddenGem
-    default: return null
-  }
 }
 
 export function getRarityLabel(rarity: string): string {

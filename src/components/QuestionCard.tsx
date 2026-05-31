@@ -108,13 +108,20 @@ export function QuestionCard({
         </div>
       </div>
 
-      {/* 导演卡片 */}
+      {/* 题干 */}
       <div className="mb-9">
-        <div className="mb-4">
-          <h2 className="text-2xl font-bold leading-none text-white">{director.name}</h2>
-          <p className="mt-2 text-sm leading-none text-zinc-400">{director.nameEn}</p>
+        <div className="flex items-center gap-2.5 mb-4">
+          <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+            导演作品
+          </span>
         </div>
-        <p className="text-sm text-zinc-500 mt-4 leading-relaxed">{director.bio}</p>
+        <h2 className="text-lg font-bold leading-snug text-white mb-5">
+          从 {director.name} 的作品中选出你最喜欢的一部？
+        </h2>
+        <div className="mb-4">
+          <p className="text-sm text-zinc-400">{director.nameEn}</p>
+        </div>
+        <p className="text-sm text-zinc-500 leading-relaxed">{director.bio}</p>
       </div>
 
       {/* 选项 */}
