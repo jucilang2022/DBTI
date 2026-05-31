@@ -121,7 +121,7 @@ export function StartScreen({ onStart, onHistory, onExplore }: StartScreenProps)
             whileTap={{ scale: 0.98 }}
           >
             <Book className="w-3.5 h-3.5" />
-            探索全部人格
+            全部人格
           </motion.button>
         </div>
 
