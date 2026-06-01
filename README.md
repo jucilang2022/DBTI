@@ -180,7 +180,7 @@ Railway 试用结束后请改用 **Render**，完整图文见 **[deploy/render-a
    | Build command | `npm run build` |
    | Build output directory | `dist` |
    | **Deploy command** | `npx wrangler deploy`（若面板标为必填则填此项） |
-   | Node version | `22`（Environment variables 里设 `NODE_VERSION=22`，Wrangler 部署需要） |
+   | Node / API | **Builds → Build variables**：`NODE_VERSION=22`、`VITE_API_BASE_URL=https://dbti-d7gw.onrender.com`（勿在 Variables and Secrets 配，纯静态 Worker 不支持运行时变量） |
 
 3. **Environment variables**（Production）：
 
