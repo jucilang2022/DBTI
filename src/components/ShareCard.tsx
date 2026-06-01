@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Copy, Share2 } from 'lucide-react'
+import { X, Copy, Share2, Download } from 'lucide-react'
 import type { DBTIType } from '@/types'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { buttonClasses } from '@/components/ui/buttonStyles'
@@ -8,8 +8,11 @@ import { drawShareCard } from '@/lib/share-card-draw'
 import {
   buildShortCopyText,
   buildShortShareText,
-  canUseNativeShare,
   copyShareText,
+  downloadShareCardPng,
+  getShareBlockReason,
+  isHttpOnlySite,
+  shareUnavailableMessage,
   shareViaSystem,
 } from '@/lib/share-actions'
 
@@ -34,7 +37,6 @@ export function ShareCard({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [copied, setCopied] = useState(false)
   const [shareHint, setShareHint] = useState<string | null>(null)
-  const systemShareAvailable = canUseNativeShare()
 
   const drawParams = useMemo(
     () => ({
@@ -66,13 +68,19 @@ export function ShareCard({
   const copyText = useMemo(() => buildShortCopyText(shortCopyInput), [shortCopyInput])
   const shareText = useMemo(() => buildShortShareText(shortCopyInput), [shortCopyInput])
 
+  const httpOnlySite = isHttpOnlySite()
+
   useEffect(() => {
     if (!open || !canvasRef.current) return
     drawShareCard(canvasRef.current, drawParams)
   }, [open, drawParams])
 
+  useEffect(() => {
+    if (!open) return
+    setShareHint(httpOnlySite ? shareUnavailableMessage('insecure') : null)
+  }, [open, httpOnlySite])
+
   const handleCopy = async () => {
-    setShareHint(null)
     const ok = await copyShareText(copyText)
     if (ok) {
       setCopied(true)
@@ -80,15 +88,25 @@ export function ShareCard({
     }
   }
 
+  const handleSaveImage = () => {
+    downloadShareCardPng(
+      drawParams,
+      `DBTI-${type.nameEn.replace(/\s+/g, '-')}.png`,
+    )
+  }
+
   const handleShare = async () => {
     setShareHint(null)
-    if (!systemShareAvailable) {
-      setShareHint('当前浏览器不支持系统分享，请用手机打开，或使用「复制」')
+    const block = getShareBlockReason()
+    if (block) {
+      setShareHint(shareUnavailableMessage(block))
       return
     }
     const result = await shareViaSystem(drawParams, shareText)
     if (result === 'shared' || result === 'aborted') return
-    setShareHint('系统分享未成功，请换用手机浏览器重试，或使用「复制」')
+    if (result === 'insecure' || result === 'unsupported' || result === 'failed') {
+      setShareHint(shareUnavailableMessage(result))
+    }
   }
 
   return (
@@ -119,7 +137,9 @@ export function ShareCard({
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-white block">分享战报</span>
-                  <span className="text-[10px] text-zinc-500">分享带图 · 复制发短文案</span>
+                  <span className="text-[10px] text-zinc-500">
+                    {httpOnlySite ? 'HTTP 站点 · 保存图片或复制' : '系统分享 · 复制短文案'}
+                  </span>
                 </div>
               </div>
               <button
@@ -147,29 +167,57 @@ export function ShareCard({
               />
             </div>
 
-            <p className="text-[10px] text-zinc-600 text-center mb-4 leading-relaxed px-1">
-              「分享」调起系统菜单（存相册 / 微信等）·「复制」仅复制短文案
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={handleShare}
-                className={cn(buttonClasses.primary, 'w-full px-4 py-3 text-sm')}
-              >
-                <Share2 className="w-4 h-4" />
-                分享
-              </button>
-              <button
-                onClick={handleCopy}
-                className={cn(buttonClasses.secondary, 'w-full px-4 py-3 text-sm')}
-              >
-                <Copy className="w-4 h-4" />
-                {copied ? '已复制' : '复制'}
-              </button>
-            </div>
-
-            {shareHint && (
-              <p className="text-[11px] text-amber-400/90 text-center mt-3 leading-relaxed">{shareHint}</p>
+            {httpOnlySite ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleSaveImage}
+                    className={cn(buttonClasses.primary, 'w-full px-4 py-3 text-sm')}
+                  >
+                    <Download className="w-4 h-4" />
+                    保存图片
+                  </button>
+                  <button
+                    onClick={handleCopy}
+                    className={cn(buttonClasses.secondary, 'w-full px-4 py-3 text-sm')}
+                  >
+                    <Copy className="w-4 h-4" />
+                    {copied ? '已复制' : '复制'}
+                  </button>
+                </div>
+                {shareHint && (
+                  <p className="text-[11px] text-amber-400/90 text-center mt-3 leading-relaxed px-1">
+                    {shareHint}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-[10px] text-zinc-600 text-center mb-4 leading-relaxed px-1">
+                  「分享」调起系统菜单（存相册 / 微信等）·「复制」仅复制短文案
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleShare}
+                    className={cn(buttonClasses.primary, 'w-full px-4 py-3 text-sm')}
+                  >
+                    <Share2 className="w-4 h-4" />
+                    分享
+                  </button>
+                  <button
+                    onClick={handleCopy}
+                    className={cn(buttonClasses.secondary, 'w-full px-4 py-3 text-sm')}
+                  >
+                    <Copy className="w-4 h-4" />
+                    {copied ? '已复制' : '复制'}
+                  </button>
+                </div>
+                {shareHint && (
+                  <p className="text-[11px] text-amber-400/90 text-center mt-3 leading-relaxed">
+                    {shareHint}
+                  </p>
+                )}
+              </>
             )}
           </motion.div>
         </motion.div>

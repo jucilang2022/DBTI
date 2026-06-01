@@ -102,7 +102,20 @@ server/
 
 （运行 `npm run dev` 后本地查看）
 
+## 📤 分享与 HTTPS
+
+系统分享（Web Share API）**仅在安全上下文**可用：`https://` 或 `http://localhost`。
+
+若站点是 **`http://39.107.99.162` 这类纯 IP + HTTP**，浏览器**不会**提供 `navigator.share`（与 localhost 开发不同）。此时应用会自动改为 **「保存图片」+「复制」**，不是代码 bug。
+
+要恢复手机「分享」菜单，需要任选其一：
+
+1. **绑定域名 + HTTPS**（推荐）：例如 `dbti.example.com` 指向服务器，用 Nginx/Caddy + Let's Encrypt 免费证书。
+2. **免费动态域名**：如 [DuckDNS](https://www.duckdns.org/) 等，再配 Caddy 自动 HTTPS。
+3. **Cloudflare Tunnel**：无公网证书也能得到 `https://xxx.trycloudflare.com` 类 HTTPS 地址。
+
+Let's Encrypt **一般不给纯 IP 签发证书**，所以仅有 IP 时很难做到标准 HTTPS。
+
 ## 🔜 待优化
 
-- 分享卡片：展示更多结果页关键信息
 - 部署说明：生产环境前后端部署脚本
