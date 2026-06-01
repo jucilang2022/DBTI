@@ -53,6 +53,34 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* 全站隐藏滚动条，保留触摸/滚轮滚动 */
+@layer base {
+  html,
+  body,
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
 ::selection {
   background: rgba(232, 121, 249, 0.3);
   color: #f5d0fe;

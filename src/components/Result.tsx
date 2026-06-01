@@ -83,36 +83,8 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
     }
   }, [type, matchScore, knownCount, resultId, result, questions, answers, aiAnalysis])
 
-  const renderShareText = () => {
-    const lines = [
-      '🎬 DBTI · 电影人格测试结果',
-      '',
-      `🧑‍🎨 类型：${type.name}（${type.nameEn}）`,
-      `📝 「${type.tagline}」`,
-      `🎯 置信度：${matchScore}%`,
-      `🎭 有效回答：${knownCount}/${totalQuestions}`,
-      aiAnalysis?.matchReason ? `💬 ${aiAnalysis.matchReason.slice(0, 80)}` : '',
-      '',
-      `✨ 精神导演：${type.spiritDirector}`,
-      '',
-      '🔗 来测测你的电影人格 👇',
-      window.location.href,
-    ]
-    return lines.filter(Boolean).join('\n')
-  }
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      // 有原生分享：弹出菜单让用户选择分享方式
-      await navigator.share({
-        title: 'DBTI 导演人格测试',
-        text: renderShareText(),
-        url: window.location.href,
-      })
-    } else {
-      // 无原生分享：打开分享卡片
-      setShowShareCard(true)
-    }
+  const handleShare = () => {
+    setShowShareCard(true)
   }
 
   // 构建全题型答案回顾数据
@@ -606,7 +578,9 @@ export function Result({ result, questions, answers, aiAnalysis, resultId, onRes
         totalQuestions={totalQuestions}
         dimensions={result.dimensions}
         matchReason={aiAnalysis?.matchReason}
+        roast={aiAnalysis?.roast}
         spiritDirector={type.spiritDirector}
+        typeCode={typeCode ?? undefined}
       />
     </PageShell>
   )
