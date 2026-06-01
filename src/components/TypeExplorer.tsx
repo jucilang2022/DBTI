@@ -45,7 +45,7 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
           >
-            16 种导演人格，你是哪一种？
+            16 种电影人格，你是哪一种？
           </motion.p>
         </div>
 
