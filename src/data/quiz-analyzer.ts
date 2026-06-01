@@ -49,6 +49,11 @@ export function analyzeQuiz(
         const c = answer.choice
         if (!c || c === 'unknown') {
           choiceCounts.unknown = (choiceCounts.unknown ?? 0) + 1
+          // 没看过该导演 → 贡献 S（随性轻度）维度，确保影迷层级不虚高
+          const w = QUESTION_TYPE_WEIGHTS.director_work
+          applyDimDelta(dims, { s: 1 }, w, maxPerDim)
+          applyDimDelta(dirDims, { s: 1 }, w)
+          applyDimDelta(behDims, { s: 1 }, w)
           continue
         }
         knownCount++
@@ -99,6 +104,16 @@ export function analyzeQuiz(
     }
   }
 
+  /* ---- 知识偏差调整 ---- */
+  // 如果用户对导演的了解度偏低，强制向 S 方向偏移
+  // 避免「没看过几位导演却拿到骨灰级迷影」的矛盾
+  const knownRatio = answers.length > 0 ? knownCount / answers.length : 0
+  if (knownRatio < 0.4) {
+    const penalty = Math.round((0.4 - knownRatio) * 10) // max ~4 points toward S
+    dims.s += penalty
+    behDims.s += penalty
+  }
+
   const dirCode = deriveTypeCode(dirDims)
   const behCode = deriveTypeCode(behDims)
 
@@ -122,10 +137,16 @@ export function analyzeQuiz(
   })
   const avgClarity = normalizedClarity.reduce((a, b) => a + b, 0) / 4
 
+  // 覆盖度扣分：unknown 答案越多，可信度越低
+  const unknownRatio = answers.length > 0
+    ? (choiceCounts.unknown ?? 0) / answers.length
+    : 0
+
   const clarityScore = Math.min(50, Math.round(avgClarity * 70 + 15))
   const coverageScore = Math.min(25, Math.round((knownCount / Math.max(answers.length, 1)) * 25))
   const consistencyScore = Math.round(agreementRatio * 25)
-  const matchScore = Math.min(100, clarityScore + coverageScore + consistencyScore)
+  const unknownPenalty = Math.round(unknownRatio * 15)
+  const matchScore = Math.min(100, Math.max(0, clarityScore + coverageScore + consistencyScore - unknownPenalty))
 
   return {
     type: matchedType,
