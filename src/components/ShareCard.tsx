@@ -1,13 +1,13 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Sparkles, Copy, Download, Share2 } from 'lucide-react'
+import { X, Copy, Share2 } from 'lucide-react'
 import type { DBTIType } from '@/types'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { buttonClasses } from '@/components/ui/buttonStyles'
 import { cn } from '@/lib/utils'
 import { drawShareCard } from '@/lib/share-card-draw'
 import {
-  buildShareText,
-  canUseNativeShare,
+  buildShortCopyText,
+  buildShortShareText,
   copyShareText,
   downloadShareCardPng,
   shareViaSystem,
@@ -34,7 +34,6 @@ export function ShareCard({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [copied, setCopied] = useState(false)
   const [shareHint, setShareHint] = useState<string | null>(null)
-  const nativeShare = canUseNativeShare()
 
   const drawParams = useMemo(
     () => ({
@@ -54,54 +53,42 @@ export function ShareCard({
     ],
   )
 
-  const shareText = useMemo(
-    () =>
-      buildShareText({
-        typeName: type.name,
-        typeNameEn: type.nameEn,
-        typeCode,
-        tagline: type.tagline,
-        matchScore,
-        knownCount,
-        totalQuestions,
-        spiritDirector: spiritDirector || type.spiritDirector,
-        quote: type.quote,
-        recommendations: type.recommendations,
-        matchReason,
-        roast,
-      }),
-    [
-      type, typeCode, matchScore, knownCount, totalQuestions,
-      spiritDirector, matchReason, roast,
-    ],
+  const shortCopyInput = useMemo(
+    () => ({
+      typeName: type.name,
+      typeCode,
+      tagline: type.tagline,
+    }),
+    [type.name, type.tagline, typeCode],
   )
+
+  const copyText = useMemo(() => buildShortCopyText(shortCopyInput), [shortCopyInput])
+  const shareText = useMemo(() => buildShortShareText(shortCopyInput), [shortCopyInput])
 
   useEffect(() => {
     if (!open || !canvasRef.current) return
     drawShareCard(canvasRef.current, drawParams)
   }, [open, drawParams])
 
-  const downloadImage = () => {
-    downloadShareCardPng(
-      drawParams,
-      `DBTI-${type.nameEn.replace(/\s+/g, '-')}.png`,
-    )
-  }
-
   const handleCopy = async () => {
-    const ok = await copyShareText(shareText)
+    setShareHint(null)
+    const ok = await copyShareText(copyText)
     if (ok) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
   }
 
-  const handleSystemShare = async () => {
+  const handleShare = async () => {
     setShareHint(null)
     const result = await shareViaSystem(drawParams, shareText)
-    if (result === 'shared') return
-    if (result === 'aborted') return
-    setShareHint('当前环境不支持系统分享，请用保存图片或复制战报')
+    if (result === 'shared' || result === 'aborted') return
+
+    downloadShareCardPng(
+      drawParams,
+      `DBTI-${type.nameEn.replace(/\s+/g, '-')}.png`,
+    )
+    setShareHint('当前环境无法唤起系统分享，已下载战报图；也可点「复制」发短文案')
   }
 
   return (
@@ -132,7 +119,7 @@ export function ShareCard({
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-white block">分享战报</span>
-                  <span className="text-[10px] text-zinc-500">各浏览器操作统一在此完成</span>
+                  <span className="text-[10px] text-zinc-500">分享带图 · 复制发短文案</span>
                 </div>
               </div>
               <button
@@ -159,37 +146,30 @@ export function ShareCard({
                 className="relative z-0 block h-auto w-full max-w-full"
               />
             </div>
-            <p className="text-[10px] text-zinc-600 text-center -mt-1 mb-3">
-              预览可上下滑动 · 保存的图片仍为高清完整尺寸
+
+            <p className="text-[10px] text-zinc-600 text-center mb-4 leading-relaxed px-1">
+              战报图含完整解读 · 手机点「分享」可存相册或发给好友
             </p>
 
-            <p className="text-[11px] text-zinc-500 text-center mb-4 leading-relaxed px-1">
-              <Sparkles className="w-3 h-3 text-purple-400 inline-block mr-1 -mt-0.5" />
-              保存为 3x 高清图；微信 / 微博建议用「保存图片」
-            </p>
-
-            <div className={cn('grid gap-3', nativeShare ? 'grid-cols-3' : 'grid-cols-2')}>
-              <button onClick={downloadImage} className={cn(buttonClasses.primary, 'w-full px-3 py-3 text-xs sm:text-sm')}>
-                <Download className="w-4 h-4" />
-                保存图片
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handleShare}
+                className={cn(buttonClasses.primary, 'w-full px-4 py-3 text-sm')}
+              >
+                <Share2 className="w-4 h-4" />
+                分享
               </button>
-              <button onClick={handleCopy} className={cn(buttonClasses.secondary, 'w-full px-3 py-3 text-xs sm:text-sm')}>
+              <button
+                onClick={handleCopy}
+                className={cn(buttonClasses.secondary, 'w-full px-4 py-3 text-sm')}
+              >
                 <Copy className="w-4 h-4" />
-                {copied ? '已复制' : '复制战报'}
+                {copied ? '已复制' : '复制'}
               </button>
-              {nativeShare && (
-                <button
-                  onClick={handleSystemShare}
-                  className={cn(buttonClasses.secondary, 'w-full px-3 py-3 text-xs sm:text-sm')}
-                >
-                  <Share2 className="w-4 h-4" />
-                  系统分享
-                </button>
-              )}
             </div>
 
             {shareHint && (
-              <p className="text-[11px] text-amber-400/90 text-center mt-3">{shareHint}</p>
+              <p className="text-[11px] text-amber-400/90 text-center mt-3 leading-relaxed">{shareHint}</p>
             )}
           </motion.div>
         </motion.div>

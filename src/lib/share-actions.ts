@@ -7,44 +7,32 @@ import {
 
 export type { ShareCardDrawParams as ShareCardContent }
 
-export interface ShareTextInput {
+export interface ShortCopyInput {
   typeName: string
-  typeNameEn: string
   typeCode?: string
   tagline: string
-  matchScore: number
-  knownCount: number
-  totalQuestions: number
-  spiritDirector: string
-  quote?: string
-  recommendations?: string[]
-  matchReason?: string
-  roast?: string
   url?: string
 }
 
-export function buildShareText(input: ShareTextInput): string {
-  const code = input.typeCode?.toUpperCase()
+/** 复制用：简短口令，适合群聊 */
+export function buildShortCopyText(input: ShortCopyInput): string {
+  const code = input.typeCode?.trim().toUpperCase()
   const url = input.url ?? (typeof window !== 'undefined' ? window.location.href : 'https://dbti.fun')
   return [
-    '🎬 DBTI · 电影人格战报',
-    '',
-    `🧑‍🎨 ${input.typeName}（${input.typeNameEn}）${code ? ` · ${code}` : ''}`,
-    `📝 「${input.tagline}」`,
-    `🎯 置信度 ${input.matchScore}% · 有效作答 ${input.knownCount}/${input.totalQuestions}`,
-    `✨ 精神导演：${input.spiritDirector}`,
-    input.quote ? `💭 ${input.quote}` : '',
-    input.recommendations?.length
-      ? `🍿 片单：${input.recommendations.slice(0, 3).join(' · ')}`
-      : '',
-    input.matchReason ? `🤖 ${input.matchReason}` : '',
-    input.roast ? `🔥 ${input.roast}` : '',
-    '',
-    '🔗 dbti.fun · 来测测你的电影人格',
-    url,
-  ]
-    .filter(Boolean)
-    .join('\n')
+    `我的 DBTI 是「${input.typeName}」${code ? ` ${code}` : ''}`,
+    `「${input.tagline}」`,
+    `你也来试试 → ${url}`,
+  ].join('\n')
+}
+
+/** 系统分享附带的短文案（详情在图片里） */
+export function buildShortShareText(input: ShortCopyInput): string {
+  const code = input.typeCode?.trim().toUpperCase()
+  return [
+    `我的 DBTI：${input.typeName}${code ? `（${code}）` : ''}`,
+    input.tagline,
+    '你也来试试 👇',
+  ].join('\n')
 }
 
 export async function copyShareText(text: string): Promise<boolean> {
@@ -88,7 +76,7 @@ export function canUseNativeShare(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 }
 
-/** 统一系统分享：优先带 PNG，不支持则退回纯文本+链接 */
+/** 系统分享：优先附带战报 PNG（可保存到相册），文案保持简短 */
 export async function shareViaSystem(
   drawParams: ShareCardDrawParams,
   text: string,
