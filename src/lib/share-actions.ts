@@ -76,7 +76,11 @@ export function canUseNativeShare(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 }
 
-/** 系统分享：优先附带战报 PNG（可保存到相册），文案保持简短 */
+function isShareAbort(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError'
+}
+
+/** 仅调起系统分享（Web Share API），不触发下载 */
 export async function shareViaSystem(
   drawParams: ShareCardDrawParams,
   text: string,
@@ -92,25 +96,32 @@ export async function shareViaSystem(
     const file = new File([blob], `DBTI-${drawParams.type.nameEn.replace(/\s+/g, '-')}.png`, {
       type: 'image/png',
     })
-    const withFile = { title, text, url, files: [file] }
-    if (navigator.canShare?.(withFile)) {
+    const payloads: ShareData[] = [
+      { files: [file], title, text, url },
+      { files: [file], title, text },
+      { files: [file] },
+    ]
+
+    for (const data of payloads) {
+      if (navigator.canShare && !navigator.canShare(data)) continue
       try {
-        await navigator.share(withFile)
+        await navigator.share(data)
         return 'shared'
       } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return 'aborted'
+        if (isShareAbort(err)) return 'aborted'
       }
     }
   }
 
-  const textOnly = { title, text, url }
-  if (navigator.canShare && !navigator.canShare(textOnly)) return 'unavailable'
-
-  try {
-    await navigator.share(textOnly)
-    return 'shared'
-  } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') return 'aborted'
-    return 'unavailable'
+  const textPayload = { title, text, url }
+  if (!navigator.canShare || navigator.canShare(textPayload)) {
+    try {
+      await navigator.share(textPayload)
+      return 'shared'
+    } catch (err) {
+      if (isShareAbort(err)) return 'aborted'
+    }
   }
+
+  return 'unavailable'
 }

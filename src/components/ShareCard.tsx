@@ -8,8 +8,8 @@ import { drawShareCard } from '@/lib/share-card-draw'
 import {
   buildShortCopyText,
   buildShortShareText,
+  canUseNativeShare,
   copyShareText,
-  downloadShareCardPng,
   shareViaSystem,
 } from '@/lib/share-actions'
 
@@ -34,6 +34,7 @@ export function ShareCard({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [copied, setCopied] = useState(false)
   const [shareHint, setShareHint] = useState<string | null>(null)
+  const systemShareAvailable = canUseNativeShare()
 
   const drawParams = useMemo(
     () => ({
@@ -81,14 +82,13 @@ export function ShareCard({
 
   const handleShare = async () => {
     setShareHint(null)
+    if (!systemShareAvailable) {
+      setShareHint('当前浏览器不支持系统分享，请用手机打开，或使用「复制」')
+      return
+    }
     const result = await shareViaSystem(drawParams, shareText)
     if (result === 'shared' || result === 'aborted') return
-
-    downloadShareCardPng(
-      drawParams,
-      `DBTI-${type.nameEn.replace(/\s+/g, '-')}.png`,
-    )
-    setShareHint('当前环境无法唤起系统分享，已下载战报图；也可点「复制」发短文案')
+    setShareHint('系统分享未成功，请换用手机浏览器重试，或使用「复制」')
   }
 
   return (
@@ -148,7 +148,7 @@ export function ShareCard({
             </div>
 
             <p className="text-[10px] text-zinc-600 text-center mb-4 leading-relaxed px-1">
-              战报图含完整解读 · 手机点「分享」可存相册或发给好友
+              「分享」调起系统菜单（存相册 / 微信等）·「复制」仅复制短文案
             </p>
 
             <div className="grid grid-cols-2 gap-3">
