@@ -5,7 +5,7 @@
   "description": "🎬 DBTI 电影人格测试 — 16 道题找到你的电影品味 DNA",
   "type": "module",
   "engines": {
-    "node": ">=20 <25"
+    "node": ">=22 <26"
   },
   "scripts": {
     "dev": "vite",

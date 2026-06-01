@@ -14,8 +14,10 @@
 
 ```
 VITE_API_BASE_URL=https://dbti-d7gw.onrender.com
-NODE_VERSION=20
+NODE_VERSION=22
 ```
+
+Wrangler 4.86+ 要求 **Node.js ≥ 22**；若 Deploy 报版本错误，请把 `NODE_VERSION` 设为 `22`（与仓库 `.node-version` 一致）。
 
 保存后 **Retry deployment**。
 

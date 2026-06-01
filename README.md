@@ -180,7 +180,7 @@ Railway 试用结束后请改用 **Render**，完整图文见 **[deploy/render-a
    | Build command | `npm run build` |
    | Build output directory | `dist` |
    | **Deploy command** | `npx wrangler deploy`（若面板标为必填则填此项） |
-   | Node version | `20`（Environment variables 里可设 `NODE_VERSION=20`） |
+   | Node version | `22`（Environment variables 里设 `NODE_VERSION=22`，Wrangler 部署需要） |
 
 3. **Environment variables**（Production）：
 
