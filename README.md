@@ -169,6 +169,8 @@ Railway 试用结束后请改用 **Render**，完整图文见 **[deploy/render-a
 
 ### 第三步：部署前端（Cloudflare Pages）
 
+详细说明见 **[deploy/cloudflare-pages.md](deploy/cloudflare-pages.md)**。
+
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**。  
 2. 选仓库，构建设置：
 
@@ -177,6 +179,7 @@ Railway 试用结束后请改用 **Render**，完整图文见 **[deploy/render-a
    | Framework preset | None 或 Vite |
    | Build command | `npm run build` |
    | Build output directory | `dist` |
+   | **Deploy command** | **留空**（勿填 `npx wrangler deploy`） |
    | Node version | `20`（Environment variables 里可设 `NODE_VERSION=20`） |
 
 3. **Environment variables**（Production）：
