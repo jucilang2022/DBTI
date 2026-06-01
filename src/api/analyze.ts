@@ -6,6 +6,7 @@ import { valueQuestions } from '@/data/value-questions'
 import { scenarioQuestions } from '@/data/scenario_questions'
 import { selfCognitionQuestions } from '@/data/self_cognition_questions'
 import type { QuizResult, AIAnalysis } from '@/types'
+import { apiUrl } from '@/lib/api-base'
 
 /**
  * 为 AI 构建完整的答题记录（含题面、选项文本、用户选择）
@@ -152,7 +153,7 @@ export async function analyzeWithAI(
       quote: t.quote,
     }))
 
-    const response = await fetch('/api/analyze', {
+    const response = await fetch(apiUrl('/api/analyze'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

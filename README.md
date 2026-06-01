@@ -116,6 +116,116 @@ server/
 
 Let's Encrypt **一般不给纯 IP 签发证书**，所以仅有 IP 时很难做到标准 HTTPS。
 
+## ☁️ 推荐：方案 B（免费 · 不备案 · HTTPS）
+
+**不买服务器**时用这套：前端 **Cloudflare Pages**（免费），AI 后端 **Render** 等免费托管（Railway 试用结束可换 Render）。
+
+| 项目 | 费用 |
+|------|------|
+| Cloudflare Pages | 免费 |
+| Render Web Service | 免费档（会休眠，首请求可能较慢） |
+| 域名 dbti.fun | 你已有 |
+
+架构：
+
+- **dbti.fun** → Cloudflare Pages（静态站 + 自动 HTTPS + 系统分享）
+- **api.dbti.fun** → Render（`npm start`，挂 DeepSeek Key）
+
+大陆访问：多数情况**能打开**，偶发偏慢；AI 超时则会**降级为本地结果**（无锐评，类型仍有）。若以后要更快且愿付费，可看下方「香港单机」。
+
+**阿里云大陆 ECS（39.107.99.162）可关机**，域名不要再用 A 记录指过去。
+
+### 快速清单
+
+1. 代码在 **GitHub**
+2. **Render** 部署 API → 环境变量 `AI_API_KEY` → 绑定 `api.dbti.fun`（见 [deploy/render-api.md](deploy/render-api.md)）
+3. **Cloudflare Pages** 部署 → 环境变量 `VITE_API_BASE_URL=https://api.dbti.fun` → 绑定 `dbti.fun`
+4. DNS 删掉指向 `39.107.99.162` 的 A 记录，改成 Pages / Render 的 CNAME
+
+---
+
+## 方案 B 详细步骤
+
+架构：**dbti.fun** → Cloudflare Pages  
+**api.dbti.fun** → Render 等（无需 ICP 备案）
+
+### 第一步：代码推送到 GitHub
+
+确保仓库在 GitHub（Cloudflare Pages / Render 都从 Git 拉代码）。
+
+### 第二步：部署 AI 后端（Render 免费档）
+
+Railway 试用结束后请改用 **Render**，完整图文见 **[deploy/render-api.md](deploy/render-api.md)**。
+
+简要步骤：
+
+1. [render.com](https://render.com) → **New Web Service** → 连 GitHub 仓库。  
+2. **Build**：`npm install` · **Start**：`npm start` · **Plan**：Free · **Region**：Singapore。  
+3. 环境变量：`AI_API_KEY`（必填）。  
+4. 访问 `https://你的服务名.onrender.com/health` 应返回 `{"ok":true}`。  
+5. Render 里绑自定义域名 **api.dbti.fun**，DNS 加 CNAME `api` → Render 提示的目标。
+
+> 免费档会休眠，久未访问后第一次 AI 分析可能要等半分钟唤醒。也可试 [Zeabur](https://zeabur.com) 免费额度。
+
+### 第三步：部署前端（Cloudflare Pages）
+
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**。  
+2. 选仓库，构建设置：
+
+   | 项 | 值 |
+   |----|-----|
+   | Framework preset | None 或 Vite |
+   | Build command | `npm run build` |
+   | Build output directory | `dist` |
+   | Node version | `20`（Environment variables 里可设 `NODE_VERSION=20`） |
+
+3. **Environment variables**（Production）：
+
+   ```
+   VITE_API_BASE_URL=https://api.dbti.fun
+   ```
+
+   若 API 还没绑域名，可暂时填 Render 的 `https://xxx.onrender.com`（不要末尾 `/`）。
+
+4. 保存并 **Deploy**。首次构建约 1～3 分钟。
+
+5. **Custom domains** → 添加 **dbti.fun** 和 **www.dbti.fun**。  
+   Cloudflare 会提示把 DNS 从「A 记录 → 39.107.99.162」改成 **CNAME 到 `xxx.pages.dev`**（根域名用 CNAME 扁平化，在 Cloudflare DNS 里一键即可）。
+
+6. 打开 `https://dbti.fun`，完成一次测试，看 AI 锐评是否出现。
+
+### 第四步：DNS 对照（在 Cloudflare DNS 里）
+
+| 类型 | 名称 | 内容 | 说明 |
+|------|------|------|------|
+| CNAME | `@` | `dbti.pages.dev`（Pages 提供的） | 网站 |
+| CNAME | `www` | `dbti.pages.dev` | 可选 |
+| CNAME | `api` | `xxxx.onrender.com`（Render 提供） | AI 接口 |
+
+**删掉** 原来指向 `39.107.99.162` 的 A 记录（否则还会走国内机 + 备案拦截）。
+
+国内那台 ECS 可以只当备用，或关机省钱。
+
+### 常见问题
+
+- **页面能开，没有 AI 文案**：检查 `VITE_API_BASE_URL` 是否配对、改完后要在 Pages 里 **Retry deployment** 重新构建。  
+- **浏览器报 CORS**：后端已 `cors()` 全开放；若仍报错，确认 API 地址是 `https` 且域名无误。  
+- **系统分享**：`https://dbti.fun` 下会自动可用「分享」按钮。  
+- **混合内容**：前端必须 HTTPS，API 也必须 HTTPS（Render / 自定义域名均满足）。  
+- **AI 很慢或没有锐评**：Render 免费档可能正在休眠，等一会重试；或检查 `AI_API_KEY`。
+
+### 本地对照生产
+
+```bash
+# 模拟生产 API 地址
+VITE_API_BASE_URL=https://api.dbti.fun npm run build
+npm run preview
+```
+
+## 🇭🇰 可选：香港单机（付费，大陆更快）
+
+约几十元/月，前后端一台香港轻量，适合「大陆用户为主且不想备案但介意速度」。见 **[deploy/hk-server.md](deploy/hk-server.md)**。
+
 ## 🔜 待优化
 
-- 部署说明：生产环境前后端部署脚本
+- 生产环境 CORS 白名单（`CORS_ORIGIN`）

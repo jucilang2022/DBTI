@@ -1,0 +1,14 @@
+# 香港（或境外）单机：前后端同域，大陆访问无需 ICP 备案（域名勿解析到大陆 ECS）
+# 安装 Caddy 后：sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile && sudo systemctl reload caddy
+
+dbti.fun, www.dbti.fun {
+	root * /var/www/dbti/dist
+	encode gzip
+
+	# SPA 路由
+	try_files {path} /index.html
+	file_server
+
+	# AI 后端（本机 npm start，默认 3099）
+	reverse_proxy /api/* localhost:3099
+}

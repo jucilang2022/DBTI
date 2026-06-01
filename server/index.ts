@@ -177,6 +177,10 @@ ${qa.options.map((o: string, j: number) => `  ${j === qa.selected ? '→' : ' '}
   }
 })
 
+app.get('/health', (_req, res) => {
+  res.json({ ok: true })
+})
+
 app.listen(PORT, () => {
   console.log(`🧠 DBTI AI Analysis Server running on http://localhost:${PORT}`)
 })

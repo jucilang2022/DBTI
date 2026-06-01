@@ -1,0 +1,17 @@
+# Render Blueprint：Dashboard → New → Blueprint → 选仓库 可一键部署 API
+# 免费档会休眠，首请求可能慢 30～60 秒
+services:
+  - type: web
+    name: dbti-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_BASE_URL
+        value: https://api.deepseek.com
+      - key: AI_MODEL
+        value: deepseek-chat
