@@ -1,15 +1,14 @@
-# Cloudflare Pages 部署前端（静态站）
+# Cloudflare 部署前端
 
-## 正确配置（不要用 Wrangler 当 Deploy command）
+## 面板里怎么填（Deploy command 必填时）
 
-在 Pages 项目 → **Settings → Build**：
+**Settings → Build**：
 
-| 项 | 填什么 |
-|----|--------|
-| Framework preset | None |
+| 项 | 值 |
+|----|-----|
 | Build command | `npm run build` |
-| Build output directory | `dist` |
-| **Deploy command** | **留空**（不要填 `npx wrangler deploy`） |
+| Build output directory | `dist`（仅展示用；实际以 Wrangler 为准） |
+| **Deploy command** | `npx wrangler deploy` |
 
 环境变量（Production）：
 
@@ -20,12 +19,19 @@ NODE_VERSION=20
 
 保存后 **Retry deployment**。
 
-## 单页应用路由（刷新不 404）
+## 为什么不用 `_redirects`
 
-**Settings → Functions** 或项目概览里打开 **Single Page Application (SPA)** / **处理单页应用程序**（有则勾选）。
+不要加 `public/_redirects` 里的 `/* /index.html 200`。  
+SPA 路由由仓库根目录 `wrangler.jsonc` 的 `assets.not_found_handling: "single-page-application"` 处理；再加 `_redirects` 会和 Wrangler 冲突，报 **Infinite loop (100324)**。
 
-不要用 `public/_redirects` 里的 `/* /index.html 200`，会和 Wrangler 冲突导致部署失败。
+## 本地验证
+
+```bash
+npm install
+npm run build
+npx wrangler deploy
+```
 
 ## 绑定域名
 
-**Custom domains** → 添加 `dbti.fun` → 按提示改 DNS（CNAME 到 `xxx.pages.dev`）。
+**Custom domains** → 添加 `dbti.fun` → 按提示改 DNS（CNAME 到 `xxx.pages.dev` 或 Workers 域名）。

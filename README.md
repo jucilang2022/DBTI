@@ -179,7 +179,7 @@ Railway 试用结束后请改用 **Render**，完整图文见 **[deploy/render-a
    | Framework preset | None 或 Vite |
    | Build command | `npm run build` |
    | Build output directory | `dist` |
-   | **Deploy command** | **留空**（勿填 `npx wrangler deploy`） |
+   | **Deploy command** | `npx wrangler deploy`（若面板标为必填则填此项） |
    | Node version | `20`（Environment variables 里可设 `NODE_VERSION=20`） |
 
 3. **Environment variables**（Production）：

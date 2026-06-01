@@ -13,7 +13,7 @@ Render 拉的是 **GitHub 上的 main**，不是本机未提交代码。
 若日志里仍是旧 commit（例如没有 `npm start` 的版本），需要先：
 
 ```bash
-git add package.json server/index.ts src/lib/api-base.ts public/_redirects render.yaml deploy/
+git add package.json server/index.ts src/lib/api-base.ts render.yaml deploy/
 git commit -m "chore: add start script and Render deploy config"
 git push origin main
 ```
