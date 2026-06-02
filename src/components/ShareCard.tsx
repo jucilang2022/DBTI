@@ -150,7 +150,7 @@ export function ShareCard({
                 className={cn(buttonClasses.secondary, 'w-full px-4 py-3 text-sm')}
               >
                 <Copy className="w-4 h-4" />
-                {copied ? '已复制' : '复制'}
+                {copied ? '链接已复制' : '复制链接'}
               </button>
             </div>
           </motion.div>
