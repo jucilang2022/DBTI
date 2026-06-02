@@ -630,7 +630,7 @@ function drawFooter(ctx: CanvasRenderingContext2D, params: ShareCardDrawParams, 
 
   ctx.fillStyle = '#fafafa'
   ctx.font = 'bold 13px system-ui, sans-serif'
-  ctx.fillText('dbti.fun', PAD, textBaseline)
+  ctx.fillText('www.dbti.fun', PAD, textBaseline)
   ctx.fillStyle = '#71717a'
   ctx.font = '11px system-ui, sans-serif'
   ctx.fillText('来测测你的电影人格 · 看看谁和你撞型', PAD + 72, textBaseline)
