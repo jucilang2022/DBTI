@@ -8,6 +8,7 @@ interface QuestionCardProps {
   totalQuestions: number
   order: AnswerChoice[]
   onSelect: (choice: AnswerChoice) => void
+  onSkip?: () => void
 }
 
 function getChoiceColor(choice: AnswerChoice): string {
@@ -76,6 +77,7 @@ export function QuestionCard({
   totalQuestions,
   order,
   onSelect,
+  onSkip,
 }: QuestionCardProps) {
   const progress = (questionIndex / totalQuestions) * 100
 
@@ -156,6 +158,20 @@ export function QuestionCard({
           )
         })}
       </div>
+
+      {/* 换一道题 */}
+      {onSkip && (
+        <motion.button
+          onClick={onSkip}
+          className="mt-6 w-full text-center py-3 rounded-xl border border-dashed border-zinc-700 text-sm text-zinc-500 transition-colors hover:text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800/30"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          对这个导演不感兴趣？换一道题
+        </motion.button>
+      )}
     </motion.div>
   )
 }

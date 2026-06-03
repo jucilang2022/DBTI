@@ -51,8 +51,8 @@ const ANALYZING_PHRASES = [
 ]
 
 export function Quiz({ directors, onBack, onComplete }: QuizProps) {
-  /* ---- 创建混合题目列表 ---- */
-  const items = useMemo(() => {
+  /* ---- 创建混合题目列表（状态化，支持换题） ---- */
+  const [items, setItems] = useState<QuizItem[]>(() => {
     const directorItems: QuizItem[] = pickRandom(directors, DIRECTOR_WORK_COUNT).map((director) => {
       const order: AnswerChoice[] = [
         ...shuffle<AnswerChoice>(['famous', 'controversial', 'hidden']),
@@ -89,13 +89,22 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
       ...scenarioItems,
       ...selfItems,
     ])
-  }, [directors])
+  })
 
   const questions = useMemo(() => {
     return items
       .filter((item): item is QuizItem & { kind: 'director_work' } => item.kind === 'director_work')
       .map((item) => ({ director: item.director, order: item.order }))
   }, [items])
+
+  /* ---- 追踪已使用/可用导演，用于跳过换题 ---- */
+  const poolDirectors = useMemo(() => {
+    const usedIds = new Set<string>()
+    for (const item of items) {
+      if (item.kind === 'director_work') usedIds.add(item.director.id)
+    }
+    return directors.filter((d) => !usedIds.has(d.id))
+  }, [items, directors])
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<QuizAnswer[]>([])
@@ -166,6 +175,25 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
     },
     [currentItem, handleSelect],
   )
+
+  /* ---- 换一道题：从剩余导演池中随机替换当前导演 ---- */
+  const handleSkip = useCallback(() => {
+    if (currentItem?.kind !== 'director_work') return
+    if (poolDirectors.length === 0) return
+
+    const newDirector = poolDirectors[Math.floor(Math.random() * poolDirectors.length)]
+    const newOrder: AnswerChoice[] = [
+      ...shuffle<AnswerChoice>(['famous', 'controversial', 'hidden']),
+      'other',
+      'unknown',
+    ]
+
+    setItems((prev) => {
+      const next = [...prev]
+      next[currentIndex] = { kind: 'director_work', director: newDirector, order: newOrder }
+      return next
+    })
+  }, [currentItem, poolDirectors, currentIndex])
 
   useEffect(() => {
     if (!analysisPayload) return
@@ -243,6 +271,7 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
               totalQuestions={TOTAL_QUESTIONS}
               order={currentItem.order}
               onSelect={handleDirectorChoice}
+              onSkip={handleSkip}
             />
           ) : currentItem.kind === 'director_compare' ? (
             <DirectorCompareCard
