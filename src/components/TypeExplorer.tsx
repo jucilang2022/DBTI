@@ -15,7 +15,7 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
 
   return (
     <PageShell>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <button
@@ -33,7 +33,7 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
 
         <div>
           <motion.h1
-            className="text-2xl font-bold text-white mb-2"
+            className="text-xl sm:text-2xl font-bold text-white mb-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -63,11 +63,11 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
               >
                 <button
                   onClick={() => setExpanded(isOpen ? null : type.id)}
-                  className="w-full flex items-center justify-between gap-4 p-5 text-left"
+                  className="w-full flex items-center justify-between gap-3 sm:gap-4 p-4 sm:p-5 text-left"
                 >
-                  <div className="flex min-w-0 items-center gap-6">
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-6">
                     <div
-                      className="w-16 h-10 rounded-xl flex items-center justify-center font-mono text-sm font-bold tracking-wider"
+                      className="w-14 sm:w-16 h-9 sm:h-10 rounded-xl flex items-center justify-center font-mono text-xs sm:text-sm font-bold tracking-wider shrink-0"
                       style={{ backgroundColor: type.color + '20', color: type.color }}
                     >
                       {type.id}
@@ -77,10 +77,10 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
                       <div className="text-xs text-zinc-500 mt-0.5">{type.nameEn}</div>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                     <span
                       className={cn(
-                        'text-xs px-2.5 py-1 rounded-full font-medium',
+                        'text-[11px] sm:text-xs px-2 sm:px-2.5 py-1 rounded-full font-medium',
                         type.rarity === 'legendary' && 'bg-yellow-500/10 text-yellow-300',
                         type.rarity === 'rare' && 'bg-purple-500/10 text-purple-300',
                         type.rarity === 'uncommon' && 'bg-blue-500/10 text-blue-300',
@@ -110,8 +110,8 @@ export function TypeExplorer({ onBack }: TypeExplorerProps) {
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-5 pb-5 space-y-5 border-t border-zinc-800 pt-5">
-                        <p className="text-lg text-zinc-300 italic text-center">「{type.tagline}」</p>
+                      <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-4 sm:space-y-5 border-t border-zinc-800 pt-4 sm:pt-5">
+                        <p className="text-base sm:text-lg text-zinc-300 italic text-center">「{type.tagline}」</p>
                         <p className="text-sm text-zinc-300 leading-relaxed">{type.description}</p>
 
                         <div className="space-y-2">

@@ -33,8 +33,8 @@ export function PageShell({
       {background}
       <div
         className={cn(
-          'relative z-10 w-full max-w-2xl mx-auto px-6',
-          centered ? 'py-12' : 'pt-12 pb-16',
+          'relative z-10 w-full max-w-2xl mx-auto px-4 sm:px-6',
+          centered ? 'py-8 sm:py-12' : 'pt-10 pb-12 sm:pt-12 sm:pb-16',
           contentClassName,
         )}
       >
@@ -45,13 +45,13 @@ export function PageShell({
 }
 
 export function Section({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('space-y-6', className)} {...props} />
+  return <div className={cn('space-y-4 sm:space-y-6', className)} {...props} />
 }
 
 export function Card({ className, ...props }: HTMLMotionProps<'div'>) {
   return (
     <motion.div
-      className={cn('dbti-card border p-6', className)}
+      className={cn('dbti-card border p-4 sm:p-6', className)}
       {...props}
     />
   )

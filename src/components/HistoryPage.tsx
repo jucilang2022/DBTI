@@ -54,7 +54,7 @@ export function HistoryPage({ onBack, onSelectResult }: HistoryPageProps) {
 
   return (
     <PageShell>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <button
@@ -80,7 +80,7 @@ export function HistoryPage({ onBack, onSelectResult }: HistoryPageProps) {
           animate={{ opacity: 1, y: 0 }}
           className="-mt-1"
         >
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5 sm:gap-3">
             <Clock className="w-5 h-5 text-purple-400" />
             我的测试记录
           </h1>
@@ -92,7 +92,7 @@ export function HistoryPage({ onBack, onSelectResult }: HistoryPageProps) {
         {/* 统计摘要 */}
         {totalTests > 0 && (
           <Card
-            className="p-5"
+            className="p-4 sm:p-5"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -102,13 +102,13 @@ export function HistoryPage({ onBack, onSelectResult }: HistoryPageProps) {
               <span className="text-sm font-semibold text-white">数据概览</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <div className="bg-zinc-800/40 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-white">{totalTests}</div>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-5">
+              <div className="bg-zinc-800/40 rounded-xl p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-2xl font-bold text-white">{totalTests}</div>
                 <div className="text-xs text-zinc-500 mt-1">测试次数</div>
               </div>
-              <div className="bg-zinc-800/40 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-white">
+              <div className="bg-zinc-800/40 rounded-xl p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-2xl font-bold text-white">
                   {topTypeInfo ? (
                     <span style={{ color: topTypeInfo.color }}>{topTypeInfo.name}</span>
                   ) : '—'}
@@ -188,15 +188,15 @@ export function HistoryPage({ onBack, onSelectResult }: HistoryPageProps) {
                     }
                   }}
                   disabled={!hasDetail}
-                  className="w-full bg-zinc-900/60 rounded-2xl border border-zinc-800 p-5 text-left transition-colors enabled:hover:bg-zinc-900 disabled:cursor-default"
+                  className="relative w-full bg-zinc-900/60 rounded-2xl border border-zinc-800 p-4 sm:p-5 text-left transition-colors enabled:hover:bg-zinc-900 disabled:cursor-default"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + i * 0.03 }}
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex min-w-0 items-center gap-6">
+                  <div className="grid grid-cols-[1fr_auto] items-center gap-3 sm:flex sm:justify-between sm:gap-4">
+                    <div className="flex min-w-0 items-center gap-3 sm:gap-6">
                       <div
-                        className="w-16 h-10 rounded-xl flex items-center justify-center font-mono text-sm font-bold tracking-wider"
+                        className="w-14 sm:w-16 h-9 sm:h-10 rounded-xl flex items-center justify-center font-mono text-xs sm:text-sm font-bold tracking-wider shrink-0"
                         style={{
                           backgroundColor: (info?.color ?? '#666') + '20',
                           color: info?.color ?? '#666',
@@ -208,16 +208,16 @@ export function HistoryPage({ onBack, onSelectResult }: HistoryPageProps) {
                         <div className="text-sm font-semibold text-white">
                           {entry.typeName}
                         </div>
-                        <div className="text-xs text-zinc-500 mt-1">
+                        <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-relaxed">
                           {dateStr} · 有效回答 {entry.knownCount}/16 题
                         </div>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-lg font-bold text-white">{entry.matchScore}%</div>
+                    <div className="text-right shrink-0 pr-5 sm:pr-0">
+                      <div className="text-base sm:text-lg font-bold text-white">{entry.matchScore}%</div>
                       <div className="text-[11px] text-zinc-600 mt-0.5">匹配度</div>
                     </div>
-                    {hasDetail && <ChevronRight className="w-4 h-4 text-zinc-600 shrink-0" />}
+                    {hasDetail && <ChevronRight className="absolute right-4 w-4 h-4 text-zinc-600 shrink-0 sm:static" />}
                   </div>
                 </motion.button>
               )

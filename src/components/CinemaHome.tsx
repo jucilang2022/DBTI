@@ -1,12 +1,15 @@
-import { ArrowDown, ArrowRight, Clock3, Grid2X2, Sparkles } from 'lucide-react'
+import { ArrowDown, ArrowRight, Clock3, Compass, Grid2X2, MessageCircle, Sparkles, UserRound } from 'lucide-react'
 
 interface CinemaHomeProps {
   onStartTest: () => void
   onHistory: () => void
   onExplore: () => void
+  onProfile: () => void
+  onPrompt: () => void
+  onMatch: () => void
 }
 
-export function CinemaHome({ onStartTest, onHistory, onExplore }: CinemaHomeProps) {
+export function CinemaHome({ onStartTest, onHistory, onExplore, onProfile, onPrompt, onMatch }: CinemaHomeProps) {
   return (
     <div className="cinema-home">
       <header className="cinema-header">
@@ -18,7 +21,7 @@ export function CinemaHome({ onStartTest, onHistory, onExplore }: CinemaHomeProp
         <nav className="cinema-nav" aria-label="主导航">
           <a href="#top">首页</a>
           <button onClick={onStartTest}>DBTI 测试</button>
-          <button onClick={onExplore}>人格全览</button>
+          <a href="#cinema-life">影迷空间</a>
         </nav>
 
         <button className="header-test-button" onClick={onStartTest}>
@@ -112,6 +115,54 @@ export function CinemaHome({ onStartTest, onHistory, onExplore }: CinemaHomeProp
           </div>
         </section>
 
+        <section className="cinema-life" id="cinema-life">
+          <div className="cinema-life-heading">
+            <div>
+              <p className="cinema-eyebrow">YOUR CINEMA LIFE</p>
+              <h2>测试只是开场，<br /><em>真正的故事在散场以后。</em></h2>
+            </div>
+            <p>
+              建立你的银幕身份，回答只属于影迷的问题，
+              再遇见那些与你相似、或恰好完全不同的人。
+            </p>
+          </div>
+
+          <div className="cinema-life-grid">
+            <button className="cinema-life-card featured" onClick={onProfile}>
+              <span className="cinema-life-number">01</span>
+              <UserRound />
+              <div>
+                <small>MY SCREEN IDENTITY</small>
+                <h3>电影人格主页</h3>
+                <p>把测试结果变成长期身份，收藏塑造你的电影与审美坐标。</p>
+              </div>
+              <ArrowRight />
+            </button>
+
+            <button className="cinema-life-card" onClick={onPrompt}>
+              <span className="cinema-life-number">02</span>
+              <MessageCircle />
+              <div>
+                <small>DAILY QUESTION</small>
+                <h3>今日电影命题</h3>
+                <p>不写标准影评，只说电影曾经如何穿过你的生活。</p>
+              </div>
+              <ArrowRight />
+            </button>
+
+            <button className="cinema-life-card" onClick={onMatch}>
+              <span className="cinema-life-number">03</span>
+              <Compass />
+              <div>
+                <small>SOULMATE SCREENING</small>
+                <h3>灵魂影友匹配</h3>
+                <p>寻找同类、镜像与引路人，看看你们会为哪部电影争论。</p>
+              </div>
+              <ArrowRight />
+            </button>
+          </div>
+        </section>
+
         <section className="cinema-manifesto">
           <p className="cinema-eyebrow">THIS IS JUST THE BEGINNING</p>
           <blockquote>
@@ -119,7 +170,7 @@ export function CinemaHome({ onStartTest, onHistory, onExplore }: CinemaHomeProp
             <br />
             也是我们理解世界的方式。”
           </blockquote>
-          <p>幕间仍在生长。现在，从认识你的电影人格开始。</p>
+          <p>幕间仍在生长。这里不只保存看过的电影，也保存电影留下的你。</p>
         </section>
       </main>
 

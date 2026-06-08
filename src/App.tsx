@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import { CinemaHome } from '@/components/CinemaHome'
 import { Quiz } from '@/components/Quiz'
 import { Result } from '@/components/Result'
 import { HistoryPage } from '@/components/HistoryPage'
 import { TypeExplorer } from '@/components/TypeExplorer'
+import { CinephileProfile } from '@/components/CinephileProfile'
+import { DailyPrompt } from '@/components/DailyPrompt'
+import { SoulMatch } from '@/components/SoulMatch'
 import type { QuizResult, Director, Answer, QuizQuestion, AIAnalysis, QuizAnswer, AnswerChoice } from '@/types'
 import { Button, PageShell } from '@/components/ui/layout'
 
-type Phase = 'loading' | 'home' | 'quiz' | 'result' | 'history' | 'explore'
+type Phase = 'loading' | 'home' | 'quiz' | 'result' | 'history' | 'explore' | 'profile' | 'prompt' | 'match'
 
 interface StoredResultEntry {
   id: string
@@ -52,6 +55,11 @@ export default function App() {
         setError('导演数据库加载失败，请刷新重试')
       })
   }, [])
+
+  useLayoutEffect(() => {
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [phase])
 
   const handleStart = () => {
     setPhase('quiz')
@@ -149,9 +157,21 @@ export default function App() {
 
   return (
     <>
-      {phase === 'home' && <CinemaHome onStartTest={handleStart} onHistory={handleHistory} onExplore={handleExplore} />}
+      {phase === 'home' && (
+        <CinemaHome
+          onStartTest={handleStart}
+          onHistory={handleHistory}
+          onExplore={handleExplore}
+          onProfile={() => setPhase('profile')}
+          onPrompt={() => setPhase('prompt')}
+          onMatch={() => setPhase('match')}
+        />
+      )}
       {phase === 'history' && <HistoryPage onBack={() => setPhase('home')} onSelectResult={handleSelectHistoryResult} />}
       {phase === 'explore' && <TypeExplorer onBack={() => setPhase('home')} />}
+      {phase === 'profile' && <CinephileProfile onBack={() => setPhase('home')} onStartTest={handleStart} />}
+      {phase === 'prompt' && <DailyPrompt onBack={() => setPhase('home')} />}
+      {phase === 'match' && <SoulMatch onBack={() => setPhase('home')} onStartTest={handleStart} />}
       {phase === 'quiz' && <Quiz directors={directors} onBack={() => setPhase('home')} onComplete={handleComplete} />}
       {phase === 'result' && result && quizData && (
         <Result
