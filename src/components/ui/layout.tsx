@@ -23,7 +23,7 @@ export function PageShell({
   return (
     <div
       className={cn(
-        'min-h-screen bg-[#0a0a0f]',
+        'dbti-page min-h-screen',
         centered && 'flex items-center justify-center',
         overflowHidden && 'overflow-hidden',
         className,
@@ -33,7 +33,7 @@ export function PageShell({
       {background}
       <div
         className={cn(
-          'relative z-10 w-full max-w-lg mx-auto px-6',
+          'relative z-10 w-full max-w-2xl mx-auto px-6',
           centered ? 'py-12' : 'pt-12 pb-16',
           contentClassName,
         )}
@@ -51,7 +51,7 @@ export function Section({ className, ...props }: HTMLAttributes<HTMLDivElement>)
 export function Card({ className, ...props }: HTMLMotionProps<'div'>) {
   return (
     <motion.div
-      className={cn('rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6', className)}
+      className={cn('dbti-card border p-6', className)}
       {...props}
     />
   )

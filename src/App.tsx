@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { StartScreen } from '@/components/StartScreen'
+import { CinemaHome } from '@/components/CinemaHome'
 import { Quiz } from '@/components/Quiz'
 import { Result } from '@/components/Result'
 import { HistoryPage } from '@/components/HistoryPage'
@@ -7,7 +7,7 @@ import { TypeExplorer } from '@/components/TypeExplorer'
 import type { QuizResult, Director, Answer, QuizQuestion, AIAnalysis, QuizAnswer, AnswerChoice } from '@/types'
 import { Button, PageShell } from '@/components/ui/layout'
 
-type Phase = 'loading' | 'start' | 'quiz' | 'result' | 'history' | 'explore'
+type Phase = 'loading' | 'home' | 'quiz' | 'result' | 'history' | 'explore'
 
 interface StoredResultEntry {
   id: string
@@ -46,7 +46,7 @@ export default function App() {
     import('@/data/directors')
       .then((mod) => {
         setDirectors(mod.directors)
-        setPhase('start')
+        setPhase('home')
       })
       .catch(() => {
         setError('导演数据库加载失败，请刷新重试')
@@ -84,7 +84,7 @@ export default function App() {
   const handleRestart = () => {
     setResult(null)
     setQuizData(null)
-    setPhase('start')
+    setPhase('home')
   }
 
   const handleSelectHistoryResult = (entry: StoredResultEntry) => {
@@ -149,10 +149,10 @@ export default function App() {
 
   return (
     <>
-      {phase === 'start' && <StartScreen onStart={handleStart} onHistory={handleHistory} onExplore={handleExplore} />}
-      {phase === 'history' && <HistoryPage onBack={() => setPhase('start')} onSelectResult={handleSelectHistoryResult} />}
-      {phase === 'explore' && <TypeExplorer onBack={() => setPhase('start')} />}
-      {phase === 'quiz' && <Quiz directors={directors} onBack={() => setPhase('start')} onComplete={handleComplete} />}
+      {phase === 'home' && <CinemaHome onStartTest={handleStart} onHistory={handleHistory} onExplore={handleExplore} />}
+      {phase === 'history' && <HistoryPage onBack={() => setPhase('home')} onSelectResult={handleSelectHistoryResult} />}
+      {phase === 'explore' && <TypeExplorer onBack={() => setPhase('home')} />}
+      {phase === 'quiz' && <Quiz directors={directors} onBack={() => setPhase('home')} onComplete={handleComplete} />}
       {phase === 'result' && result && quizData && (
         <Result
           result={result}

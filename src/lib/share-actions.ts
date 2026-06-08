@@ -143,13 +143,14 @@ export async function shareViaSystem(
 
   const url = typeof window !== 'undefined' ? window.location.href : 'https://dbti.fun'
 
-  let blob: Blob | null = null
-  try {
-    const exportCanvas = renderExportCanvas(drawParams)
-    blob = exportCanvas ? await canvasToPngBlob(exportCanvas) : null
-  } catch {
-    blob = null
-  }
+  const blob = await (async () => {
+    try {
+      const exportCanvas = renderExportCanvas(drawParams)
+      return exportCanvas ? await canvasToPngBlob(exportCanvas) : null
+    } catch {
+      return null
+    }
+  })()
 
   if (blob) {
     const file = new File([blob], `DBTI-${drawParams.type.nameEn.replace(/\s+/g, '-')}.png`, {

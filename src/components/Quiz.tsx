@@ -113,7 +113,15 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
   const [analysisPhase, setAnalysisPhase] = useState<'loading' | 'ai' | 'done'>('loading')
   const [phraseIndex, setPhraseIndex] = useState(0)
   const onCompleteRef = useRef(onComplete)
-  onCompleteRef.current = onComplete
+  const analysisPhaseRef = useRef(analysisPhase)
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
+
+  useEffect(() => {
+    analysisPhaseRef.current = analysisPhase
+  }, [analysisPhase])
 
   const currentItem = items[currentIndex]
 
@@ -203,8 +211,8 @@ export function Quiz({ directors, onBack, onComplete }: QuizProps) {
 
     const phraseTimer = setInterval(() => {
       setPhraseIndex((i) => {
-        if (analysisPhase === 'ai' && i < 4) return 4
-        if (analysisPhase === 'loading' && i >= 4) return 0
+        if (analysisPhaseRef.current === 'ai' && i < 4) return 4
+        if (analysisPhaseRef.current === 'loading' && i >= 4) return 0
         return (i + 1) % ANALYZING_PHRASES.length
       })
     }, 600)
